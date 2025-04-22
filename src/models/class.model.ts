@@ -1,0 +1,17 @@
+import mongoose, { Schema } from "mongoose";
+
+const classSchema = new Schema(
+    {
+        className:{
+            type:String,
+            required:true,
+            trim:true,
+            index:true,
+        }
+    },
+    {
+        timestamps:true,
+    }
+)
+
+export const Class = mongoose.model('Class',classSchema);
