@@ -38,4 +38,13 @@ const editSubject = asyncHandler(async (req: Request, res: Response, next: NextF
         new ApiResponse(200,"Subject info updated successfully.",updatedSubjectInfo)
     )
 })
-export { addSubject, editSubject};
+
+const deleteSubject = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<void> =>{
+    const selectedSubjectId = req.params.id;
+    await Subject.findByIdAndDelete(selectedSubjectId)
+    res.status(201).json(
+        new ApiResponse(200,"Subject deleted successfully.")
+    )
+})
+
+export { addSubject, editSubject, deleteSubject};
