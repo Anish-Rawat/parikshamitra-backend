@@ -1,9 +1,19 @@
-import { Request, Response, NextFunction, RequestHandler } from 'express';
+import { Request, Response, NextFunction, RequestHandler } from "express";
 
-const asyncHandler = (requestHandler: RequestHandler): RequestHandler => {
-    return (req: Request, res: Response, next: NextFunction) => {
-        Promise.resolve(requestHandler(req, res, next)).catch(next);
-    };
-};
+export const asyncHandler =
+  (requestHandler: RequestHandler) =>
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      await requestHandler(req, res, next);
+    } catch (err: any) {
+      const statusCode =
+        typeof err.code === "number" && err.code >= 100 && err.code < 600
+          ? err.code
+          : 500;
 
-export default asyncHandler;
+      res.status(statusCode).json({
+        success: false,
+        message: err.message ?? "Something went wrong",
+      });
+    }
+  };
