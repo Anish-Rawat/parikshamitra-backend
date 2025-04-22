@@ -17,6 +17,7 @@ const subjectSchema = new Schema(
         classId:{
             type:Schema.Types.ObjectId,
             ref:"Class",
+            required:false,
         }
     },
     {

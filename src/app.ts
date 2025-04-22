@@ -7,10 +7,13 @@ app.use(cors({
     credentials: true
 }))
 app.use(express.json())
-
+app.get('/test', (req, res) => {
+    res.json({ message: 'Test route working' });
+  });
+  
 // Routes import
 import subjectRouter from "./routes/subject.router"
 
-app.use('/api/subject',subjectRouter)
+app.use('/api/v1/subject',subjectRouter)
 
 export default app
