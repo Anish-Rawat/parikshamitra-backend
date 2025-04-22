@@ -1,6 +1,6 @@
 import { Subject } from "../models/subject.model";
 import ApiResponse from "../utils/apiResponse";
-import asyncHandler from "../utils/asyncHandler";
+import {asyncHandler} from "../utils/asyncHandler";
 import { Request, Response } from 'express';
 
 const addSubject = asyncHandler(async (req: Request, res: Response): Promise<void> => {

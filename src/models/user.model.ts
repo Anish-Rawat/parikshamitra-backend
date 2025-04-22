@@ -74,7 +74,7 @@ userSchema.methods.generateRefreshToken = function () {
       userName: this.userName,
     },
     process.env.REFRESH_TOKEN_SECRET as jwt.Secret,
-    // { expiresIn: parseInt(process.env.REFRESH_TOKEN_EXPIRY as string, 10) }
+    { expiresIn: parseInt(process.env.REFRESH_TOKEN_EXPIRY as string, 10) }
   );
 };
 
