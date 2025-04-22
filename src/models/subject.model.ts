@@ -7,12 +7,14 @@ const subjectSchema = new Schema(
             required:true,
             trim:true,
             index:true,
+            allowNull: false,
         },
         subjectName:{
             type:String,
             required:true,
             trim:true,
             index:true,
+            allowNull: false,
         },
         classId:{
             type:Schema.Types.ObjectId,
@@ -25,4 +27,5 @@ const subjectSchema = new Schema(
     }
 )
 
+subjectSchema.index({ className: 1, subjectName: 1 }, { unique: true });
 export const Subject = mongoose.model('Subject',subjectSchema)

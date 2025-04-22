@@ -4,47 +4,76 @@ import {asyncHandler} from "../utils/asyncHandler";
 import { NextFunction, Request, Response } from 'express';
 
 const addSubject = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    const { className, subjectName, classId } = req.body;
+    try {
+        const { className, subjectName, classId } = req.body;
+    
+        if (!className || !subjectName) {
+            res.status(400).json({
+                success: false,
+                message: "Class name and Subject are required."
+            });
+            return;
+        }
+        
+        // Normalize both inputs
+        const normalizedClass = className.trim().toLowerCase();
+        const normalizedSubject = subjectName.trim().toLowerCase();
 
-    if (!className || !subjectName) {
-        res.status(400).json({
-            success: false,
-            message: "Class name and Subject are required."
+        // Check if combination already exists
+        const existing = await Subject.findOne({
+            className: normalizedClass,
+            subjectName: normalizedSubject
         });
-        return;
+        if (existing) {
+            res.status(409).json({
+                success: false,
+                message: `Subject '${subjectName}' is already added to class '${className}'.`
+            });
+            return;
+        }
+
+        const subject = await Subject.create({ className:normalizedClass, subjectName:normalizedSubject, classId });
+    
+        res.status(201).json(
+            new ApiResponse(200, "Subject added successfully", subject)
+        );
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Internal Server Error" });
     }
-
-    const subject = await Subject.create({ className, subjectName, classId });
-
-    res.status(201).json(
-        new ApiResponse(200, "Subject added successfully", subject)
-    );
 });
 
 const editSubject = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<void> =>{
 
-    const selectedSubjectId = req.params.id;
-    const {className, subjectName, classId} = req.body;
-    if (!className || !subjectName) {
-        res.status(400).json({
-            success: false,
-            message: "Class name and Subject are required."
-        });
-        return; // make sure to return here so execution stops
+    try {
+        const selectedSubjectId = req.params.id;
+        const {className, subjectName, classId} = req.body;
+        if (!className || !subjectName) {
+            res.status(400).json({
+                success: false,
+                message: "Class name and Subject are required."
+            });
+            return; 
+        }
+    
+        const updatedSubjectInfo = await Subject.findByIdAndUpdate(selectedSubjectId,req.body,{new:true})
+        res.status(201).json(
+            new ApiResponse(200,"Subject info updated successfully.",updatedSubjectInfo)
+        )
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Internal Server Error" });
     }
-
-    const updatedSubjectInfo = await Subject.findByIdAndUpdate(selectedSubjectId,req.body,{new:true})
-    res.status(201).json(
-        new ApiResponse(200,"Subject info updated successfully.",updatedSubjectInfo)
-    )
 })
 
 const deleteSubject = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<void> =>{
-    const selectedSubjectId = req.params.id;
-    await Subject.findByIdAndDelete(selectedSubjectId)
-    res.status(201).json(
-        new ApiResponse(200,"Subject deleted successfully.")
-    )
+    try {
+        const selectedSubjectId = req.params.id;
+        await Subject.findByIdAndDelete(selectedSubjectId)
+        res.status(201).json(
+            new ApiResponse(200,"Subject deleted successfully.")
+        )
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Internal Server Error" });
+    }
 })
 
 export { addSubject, editSubject, deleteSubject};
