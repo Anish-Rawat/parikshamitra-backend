@@ -2,7 +2,7 @@ import mongoose, { Schema } from "mongoose";
 
 const classSchema = new Schema(
     {
-        class:{
+        className:{
             type:String,
             required:true,
             trim:true,

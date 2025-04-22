@@ -1,24 +1,27 @@
-import { Schema } from "mongoose";
+import mongoose, { Schema } from "mongoose";
 
 const subjectSchema = new Schema(
     {
-        class:{
+        className:{
             type:String,
             required:true,
             trim:true,
             index:true,
         },
-        subject:{
+        subjectName:{
             type:String,
             required:true,
             trim:true,
             index:true,
         },
         classId:{
-            
+            type:Schema.Types.ObjectId,
+            ref:"Class",
         }
     },
     {
         timestamps:true,
     }
 )
+
+export const Subject = mongoose.model('Subject',subjectSchema)

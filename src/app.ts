@@ -11,5 +11,6 @@ app.use(express.json())
 // Routes import
 import subjectRouter from "./routes/subject.router"
 
-app.use('/api/v1/subject',subjectRouter)
+app.use('/api/subject',subjectRouter)
+
 export default app
