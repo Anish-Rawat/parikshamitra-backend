@@ -1,11 +1,13 @@
 import { Router } from "express";
-import { loginUser, logoutUser, registerUser } from "../controllers/auth.controller";
 import { verifyJWT } from "../middlewares/auth.middleware";
+import { blockUserById, getAllUsers } from "../controllers/user.controller";
 
 const router = Router();
-router.route("/register").post(registerUser);
 
-router.route("/login").post(loginUser);
+router.route("/all-users").get(verifyJWT, getAllUsers);
 
-router.route("/logout").post(verifyJWT, logoutUser);
+router.route("/get-user/:userId").get(verifyJWT, getAllUsers);
+
+router.route("/update-status/:userId").patch(verifyJWT, blockUserById);
+
 export default router

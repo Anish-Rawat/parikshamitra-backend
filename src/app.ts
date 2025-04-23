@@ -20,8 +20,9 @@ app.use(cookieParser());
 // Routes import
 import subjectRouter from "./routes/subject.router"
 import userRouter from "./routes/user.router"
+import authRouter from "./routes/auth.router"
 
-app.use('/api/v1/subject',subjectRouter)
-app.use('/api/v1/auth', userRouter)
-
+app.use('/api/v1/admin/subject',subjectRouter)
+app.use('/api/v1/admin/auth', authRouter)
+app.use('/api/v1/admin/user', userRouter)
 export default app

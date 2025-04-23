@@ -26,6 +26,19 @@ const userSchema = new Schema(
     refreshToken: {
       type: String,
     },
+    status: {
+      type: String,
+      enum: ["active", "inactive"],
+      default: "active",
+    },
+    testTaken: {
+      type: Number,
+      default: 0,
+    },
+    averageScore: {
+      type: Number,
+      default: 0,
+    },
   },
   { timestamps: true }
 );
@@ -48,7 +61,7 @@ userSchema.methods.generateAccessToken = function () {
       email: this.email,
       userName: this.userName,
     },
-    process.env.ACCESS_TOKEN_SECRET as jwt.Secret,
+    process.env.ACCESS_TOKEN_SECRET as jwt.Secret
     // { expiresIn: parseInt(process.env.ACCESS_TOKEN_EXPIRY as string, 10) }
   );
 };
@@ -60,9 +73,8 @@ userSchema.methods.generateRefreshToken = function () {
       email: this.email,
       userName: this.userName,
     },
-    process.env.REFRESH_TOKEN_SECRET as jwt.Secret,
+    process.env.REFRESH_TOKEN_SECRET as jwt.Secret
     // { expiresIn: parseInt(process.env.REFRESH_TOKEN_EXPIRY as string, 10) }
-
   );
 };
 
