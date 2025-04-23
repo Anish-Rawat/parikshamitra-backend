@@ -3,6 +3,18 @@ import ApiResponse from "../utils/apiResponse";
 import {asyncHandler} from "../utils/asyncHandler";
 import { NextFunction, Request, Response } from 'express';
 
+const getSubjects = asyncHandler(async(req:Request,res:Response,next:NextFunction):Promise<void>=>{
+    try {
+        const response = await Subject.find()
+        const totalRecords = getSubjects.length;
+        res.status(201).json(
+            new ApiResponse(200,"subject fetched successfully",{totalRecords,result:response})
+        )
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Internal Server Error" });
+    }
+})
+
 const addSubject = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
         const { className, subjectName, classId } = req.body;
@@ -24,7 +36,7 @@ const addSubject = asyncHandler(async (req: Request, res: Response, next: NextFu
             className: normalizedClass,
             subjectName: normalizedSubject
         });
-        if (existing) {
+        if (existing){
             res.status(409).json({
                 success: false,
                 message: `Subject '${subjectName}' is already added to class '${className}'.`
@@ -32,13 +44,13 @@ const addSubject = asyncHandler(async (req: Request, res: Response, next: NextFu
             return;
         }
 
-        const subject = await Subject.create({ className:normalizedClass, subjectName:normalizedSubject, classId });
+        const response = await Subject.create({ className:normalizedClass, subjectName:normalizedSubject, classId });
     
         res.status(201).json(
-            new ApiResponse(200, "Subject added successfully", subject)
+            new ApiResponse(200, "Subject added successfully",response)
         );
     } catch (error) {
-        res.status(500).json({ success: false, message: "Internal Server Error" });
+        res.status(500).json({ success: false, message: "Internal Server Error"});
     }
 });
 
@@ -47,6 +59,11 @@ const editSubject = asyncHandler(async (req: Request, res: Response, next: NextF
     try {
         const selectedSubjectId = req.params.id;
         const {className, subjectName, classId} = req.body;
+
+        // Normalize both inputs
+        const normalizedClass = className.trim().toLowerCase();
+        const normalizedSubject = subjectName.trim().toLowerCase();
+
         if (!className || !subjectName) {
             res.status(400).json({
                 success: false,
@@ -55,9 +72,9 @@ const editSubject = asyncHandler(async (req: Request, res: Response, next: NextF
             return; 
         }
     
-        const updatedSubjectInfo = await Subject.findByIdAndUpdate(selectedSubjectId,req.body,{new:true})
+        const response = await Subject.findByIdAndUpdate(selectedSubjectId,{ className:normalizedClass, subjectName:normalizedSubject, classId },{new:true})
         res.status(201).json(
-            new ApiResponse(200,"Subject info updated successfully.",updatedSubjectInfo)
+            new ApiResponse(200,"Subject info updated successfully.",response)
         )
     } catch (error) {
         res.status(500).json({ success: false, message: "Internal Server Error" });
@@ -76,4 +93,4 @@ const deleteSubject = asyncHandler(async (req: Request, res: Response, next: Nex
     }
 })
 
-export { addSubject, editSubject, deleteSubject};
+export { addSubject, editSubject, deleteSubject,getSubjects};

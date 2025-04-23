@@ -1,0 +1,60 @@
+import mongoose, { Schema } from "mongoose";
+
+const questionSchema = new Schema(
+    {
+        className:{
+            type:String,
+            required:true,
+            trim:true,
+            index:true,
+        },
+        subjectName:{
+            type:String,
+            required:true,
+            trim:true,
+            index:true,
+        },
+        difficultyLevel:{
+            type:String,
+            required:true,
+            trim:true,
+            index:true,
+        },
+        question:{
+            type:String,
+            required:true,
+            trim:true,
+            index:true,
+        },
+        firstOption:{
+            type:String,
+            required:true,
+            trim:true,
+        },
+        secondOption:{
+            type:String,
+            required:true,
+            trim:true,
+        },
+        thirdOption:{
+            type:String,
+            required:true,
+            trim:true,
+        },
+        fourthOption:{
+            type:String,
+            required:true,
+            trim:true,
+        },
+        correctAnswer:{
+            type:String,
+            required:true,
+            trim:true,
+        },
+    },
+    {
+        timestamps:true
+    }
+)
+
+export const Question = mongoose.model("Question",questionSchema);
