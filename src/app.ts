@@ -22,10 +22,12 @@ import subjectRouter from "./routes/subject.router"
 import userRouter from "./routes/user.router"
 import questionRouter from "./routes/question.router"
 import classRouter from "./routes/class.router"
+import authRouter from "./routes/auth.router"
 
-app.use('/api/v1/auth', userRouter)
-app.use('/api/v1/class',classRouter)
-app.use('/api/v1/subject',subjectRouter)
-app.use('/api/v1/question',questionRouter)
+app.use('/api/v1/admin/user', userRouter)
+app.use('/api/v1/admin/auth', authRouter)
+app.use('/api/v1/admin/class',classRouter)
+app.use('/api/v1/admin/subject',subjectRouter)
+app.use('/api/v1/admin/question',questionRouter)
 
 export default app
