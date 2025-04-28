@@ -2,13 +2,6 @@ import mongoose, { Schema } from "mongoose";
 
 const subjectSchema = new Schema(
     {
-        className:{
-            type:String,
-            required:true,
-            trim:true,
-            index:true,
-            allowNull: false,
-        },
         subjectName:{
             type:String,
             required:true,
@@ -20,6 +13,8 @@ const subjectSchema = new Schema(
             type:Schema.Types.ObjectId,
             ref:"Class",
             required:false,
+            trim:true,
+            index:true,
         }
     },
     {

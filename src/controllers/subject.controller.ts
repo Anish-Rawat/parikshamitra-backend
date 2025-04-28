@@ -1,96 +1,149 @@
+import { Class } from "../models/class.model";
 import { Subject } from "../models/subject.model";
 import ApiResponse from "../utils/apiResponse";
-import {asyncHandler} from "../utils/asyncHandler";
-import { NextFunction, Request, Response } from 'express';
+import { asyncHandler } from "../utils/asyncHandler";
+import { NextFunction, Request, Response } from "express";
 
-const getSubjects = asyncHandler(async(req:Request,res:Response,next:NextFunction):Promise<void>=>{
+const getSubjects = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-        const response = await Subject.find()
-        const totalRecords = getSubjects.length;
-        res.status(201).json(
-            new ApiResponse(200,"subject fetched successfully",{totalRecords,result:response})
-        )
-    } catch (error) {
-        res.status(500).json({ success: false, message: "Internal Server Error" });
-    }
-})
-
-const addSubject = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-        const { className, subjectName, classId } = req.body;
-    
-        if (!className || !subjectName) {
-            res.status(400).json({
-                success: false,
-                message: "Class name and Subject are required."
-            });
-            return;
-        }
-        
-        // Normalize both inputs
-        const normalizedClass = className.trim().toLowerCase();
-        const normalizedSubject = subjectName.trim().toLowerCase();
-
-        // Check if combination already exists
-        const existing = await Subject.findOne({
-            className: normalizedClass,
-            subjectName: normalizedSubject
-        });
-        if (existing){
-            res.status(409).json({
-                success: false,
-                message: `Subject '${subjectName}' is already added to class '${className}'.`
-            });
-            return;
-        }
-
-        const response = await Subject.create({ className:normalizedClass, subjectName:normalizedSubject, classId });
-    
-        res.status(201).json(
-            new ApiResponse(200, "Subject added successfully",response)
+      const response = await Subject.find();
+      const totalRecords = getSubjects.length;
+      res
+        .status(201)
+        .json(
+          new ApiResponse(200, "subject fetched successfully", {
+            totalRecords,
+            result: response,
+          })
         );
     } catch (error) {
-        res.status(500).json({ success: false, message: "Internal Server Error"});
+      res
+        .status(500)
+        .json({ success: false, message: "Internal Server Error" });
     }
-});
+  }
+);
 
-const editSubject = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<void> =>{
-
+const addSubject = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-        const selectedSubjectId = req.params.id;
-        const {className, subjectName, classId} = req.body;
+      const { subjectName, classId } = req.body;
 
-        // Normalize both inputs
-        const normalizedClass = className.trim().toLowerCase();
-        const normalizedSubject = subjectName.trim().toLowerCase();
+      if (!classId || !subjectName) {
+        res.status(400).json({
+          success: false,
+          message: "Class name and Subject are required.",
+        });
+        return;
+      }
 
-        if (!className || !subjectName) {
-            res.status(400).json({
-                success: false,
-                message: "Class name and Subject are required."
-            });
-            return; 
-        }
-    
-        const response = await Subject.findByIdAndUpdate(selectedSubjectId,{ className:normalizedClass, subjectName:normalizedSubject, classId },{new:true})
-        res.status(201).json(
-            new ApiResponse(200,"Subject info updated successfully.",response)
-        )
+      // Normalize both inputs
+      const normalizedSubject = subjectName.trim().toLowerCase();
+
+      // Check if combination already exists
+      const existing = await Subject.findOne({
+        classId: classId,
+        subjectName: normalizedSubject,
+      });
+      if (existing) {
+        res.status(409).json({
+          success: false,
+          message: `Subject is already added to this class.`,
+        });
+        return;
+      }
+
+      const isClassIdExist = await Class.findById(classId);
+      if (!isClassIdExist) {
+        res
+          .status(400)
+          .json({ success: false, message: "No such class id exist." });
+      }
+      const response = await Subject.create({
+        subjectName: normalizedSubject,
+        classId,
+      });
+
+      res
+        .status(201)
+        .json(new ApiResponse(200, "Subject added successfully", response));
     } catch (error) {
-        res.status(500).json({ success: false, message: "Internal Server Error" });
+      res
+        .status(500)
+        .json({ success: false, message: "Internal Server Error" });
     }
-})
+  }
+);
 
-const deleteSubject = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<void> =>{
+const editSubject = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-        const selectedSubjectId = req.params.id;
-        await Subject.findByIdAndDelete(selectedSubjectId)
-        res.status(201).json(
-            new ApiResponse(200,"Subject deleted successfully.")
-        )
-    } catch (error) {
-        res.status(500).json({ success: false, message: "Internal Server Error" });
-    }
-})
+      const selectedSubjectId = req.params.id;
+      const { subjectName, classId } = req.body;
 
-export { addSubject, editSubject, deleteSubject,getSubjects};
+      // Normalize both inputs
+      const normalizedSubject = subjectName.trim().toLowerCase();
+
+      if (!classId || !subjectName) {
+        res.status(400).json({
+          success: false,
+          message: "Class name and Subject are required.",
+        });
+        return;
+      }
+      const isClassIdExist = await Class.findById(classId);
+      if (!isClassIdExist) {
+        res
+          .status(400)
+          .json({ success: false, message: "No such class id exist." });
+      }
+      const response = await Subject.findByIdAndUpdate(
+        selectedSubjectId,
+        { subjectName: normalizedSubject, classId },
+        { new: true }
+      );
+      res
+        .status(201)
+        .json(
+          new ApiResponse(200, "Subject info updated successfully.", response)
+        );
+    } catch (error) {
+      res
+        .status(500)
+        .json({ success: false, message: "Internal Server Error" });
+    }
+  }
+);
+
+const deleteSubject = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const selectedSubjectId = req.params.id;
+      const isSelectedSubjectIdExist = await Subject.findById(selectedSubjectId)
+      if(!isSelectedSubjectIdExist){
+        res
+          .status(400)
+          .json({ success: false, message: "No such subject id exist." });
+        return;
+      }
+      const deletedSubject = await Subject.findByIdAndDelete(selectedSubjectId);
+
+      if (deletedSubject) {
+        res
+          .status(201)
+          .json(new ApiResponse(200, "Subject deleted successfully."));
+      } else {
+        res
+          .status(400)
+          .json({ success: false, message: "Subject Id not found" });
+      }
+    } catch (error) {
+      res
+        .status(500)
+        .json({ success: false, message: "Internal Server Error" });
+    }
+  }
+);
+
+export { addSubject, editSubject, deleteSubject, getSubjects };
