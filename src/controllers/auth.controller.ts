@@ -58,11 +58,11 @@ const registerUser = asyncHandler(async (req: Request, res: Response) => {
     email,
     password: hashedPassword,
   });
-
+  const userDetails = await User.findById(newUser._id).select("-password -refreshToken");
   res.status(201).json({
     success: true,
     message: "User registered successfully",
-    data: newUser,
+    data: userDetails,
   });
 });
 
