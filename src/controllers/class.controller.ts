@@ -1,28 +1,40 @@
-import { NextFunction, Request,Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import { asyncHandler } from "../utils/asyncHandler";
 import ApiResponse from "../utils/apiResponse";
 import { Class } from "../models/class.model";
 
-const addClass = asyncHandler(async(req:Request,res:Response,_next:NextFunction):Promise<void> => {
+const addClass = asyncHandler(
+  async (req: Request, res: Response, _next: NextFunction): Promise<void> => {
     try {
-        
-        const {className} = req.body;
+      const { className } = req.body;
+      if (!className.trim()) {
+        res.status(400).json(new ApiResponse(400, "Class name is required."));
+        return;
+      }
+      const classes = await Class.find();
+      const duplicate = classes.find(
+        (item) =>
+          item.className.toLowerCase().trim() === className.toLowerCase().trim()
+      );
 
-        if(!(className)){
-            res.status(400).json(
-                new ApiResponse(400,"Class name is required.")
-            )
-            return ;
-        }
+      if (duplicate) {
+        res
+          .status(400)
+          .json({ success: false, message: "Class Name already exists" });
+        return;
+      }
 
-        const normalizedClass = className.toLowerCase();
-        const response = await Class.create({className:normalizedClass});
-        res.status(200).json(
-            new ApiResponse(200,"question added successfully",response)
-        )
+      const normalizedClass = className.toLowerCase();
+      const response = await Class.create({ className: normalizedClass });
+      res
+        .status(200)
+        .json(new ApiResponse(200, "question added successfully", response));
     } catch (error) {
-        res.status(500).json({ success: false, message: "Internal Server Error" });
+      res
+        .status(500)
+        .json({ success: false, message: "Internal Server Error" });
     }
-})
+  }
+);
 
-export {addClass}
+export { addClass };

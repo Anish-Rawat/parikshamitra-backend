@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import { asyncHandler } from "../utils/asyncHandler";
 import { Test } from "../models/test.model";
-import { questions } from "../utils/mockData";
 import { Question } from "../models/question.model";
 
 interface CustomRequest extends Request {

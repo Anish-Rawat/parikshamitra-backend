@@ -1,60 +1,49 @@
 import mongoose, { Schema } from "mongoose";
 
 const questionSchema = new Schema(
-    {
-        className:{
-            type:String,
-            required:true,
-            trim:true,
-            index:true,
-        },
-        subjectName:{
-            type:String,
-            required:true,
-            trim:true,
-            index:true,
-        },
-        difficultyLevel:{
-            type:String,
-            required:true,
-            trim:true,
-            index:true,
-        },
-        question:{
-            type:String,
-            required:true,
-            trim:true,
-            index:true,
-        },
-        firstOption:{
-            type:String,
-            required:true,
-            trim:true,
-        },
-        secondOption:{
-            type:String,
-            required:true,
-            trim:true,
-        },
-        thirdOption:{
-            type:String,
-            required:true,
-            trim:true,
-        },
-        fourthOption:{
-            type:String,
-            required:true,
-            trim:true,
-        },
-        correctAnswer:{
-            type:String,
-            required:true,
-            trim:true,
-        },
+  {
+    subjectId: {
+      type: Schema.Types.ObjectId,
+      ref: "Subject",
+      required: true,
+      index: true,
     },
-    {
-        timestamps:true
-    }
-)
+    classId: {
+      type: Schema.Types.ObjectId,
+      ref: "Class",
+      required: true,
+      index: true,
+    },
+    difficultyLevel: {
+      type: String,
+      required: true,
+      trim: true,
+      index: true,
+    },
+    question: {
+      type: String,
+      required: true,
+      trim: true,
+      index: true,
+    },
+    options: {
+      type: [String],
+      required: true,
+      trim: true,
+      validate: [arrayLimit, `Exactly 4 answer choices are required.`],
+    },
+    correctAnswer: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
 
-export const Question = mongoose.model("Question",questionSchema);
+function arrayLimit(val: String[]) {
+  return val.length === 4;
+}
+export const Question = mongoose.model("Question", questionSchema);
