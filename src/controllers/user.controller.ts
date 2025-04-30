@@ -89,4 +89,32 @@ const blockUserById = asyncHandler(async (req: Request, res: Response) => {
   res.status(StatusCodes.OK).json({ updatedUser });
 });
 
-export { getAllUsers, blockUserById };
+const getDashboardTilesInfo = asyncHandler(async (req: Request, res: Response) => {
+  // total users ---> count number of users exist
+  // total test taken ---> count number of tests taken by users
+  // average score ---> average score of users ---> total score / total users
+
+  const totalUsers = await User.countDocuments();
+
+  const getAllUsers = await User.find();
+
+  let totalTestTaken = 0;
+  getAllUsers.forEach((user) => {
+    if (user.testTaken > 0) {
+      totalTestTaken += 1;
+    }
+  });
+
+  let averageScore = 0;
+  getAllUsers.forEach((user) => {
+    averageScore += user.averageScore;
+  });
+
+  res.status(StatusCodes.OK).json({
+    totalUsers,
+    totalTestTaken,
+    averageScore: averageScore / totalTestTaken,
+  });
+})
+
+export { getAllUsers, blockUserById, getDashboardTilesInfo };

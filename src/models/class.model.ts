@@ -13,6 +13,7 @@ const classSchema = new Schema(
             required:true,
             trim:true,
             index:true,
+            enum: ["class", "stream"]
         }
     },
     {

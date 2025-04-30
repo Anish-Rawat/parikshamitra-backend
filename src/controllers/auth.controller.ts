@@ -3,6 +3,7 @@ import { asyncHandler } from "../utils/asyncHandler";
 import { User } from "../models/user.model";
 import bcrypt from "bcrypt";
 import { validateEmail } from "../utils/helper";
+import { StatusCodes } from "http-status-codes";
 
 const checkPasswordMatch = async (plainText: string, hashed: string) => {
   try {
@@ -36,7 +37,6 @@ const registerUser = asyncHandler(async (req: Request, res: Response) => {
   // 7. send response
 
   const { userName, email, password } = req.body;
-
   if ([userName.trim(), email.trim(), password.trim()].includes("")) {
     throw new Error("please enter all fields");
   }
@@ -46,7 +46,7 @@ const registerUser = asyncHandler(async (req: Request, res: Response) => {
     throw new Error("Please enter valid email");
   }
 
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ email }).lean().exec();
   if (user) {
     throw new Error("User already exist");
   }
@@ -58,11 +58,11 @@ const registerUser = asyncHandler(async (req: Request, res: Response) => {
     email,
     password: hashedPassword,
   });
-
+  const userDetails = await User.findById(newUser._id).select("-password -refreshToken");
   res.status(201).json({
     success: true,
     message: "User registered successfully",
-    data: newUser,
+    data: userDetails,
   });
 });
 
@@ -137,4 +137,18 @@ const logoutUser = asyncHandler(async (req: any, res: any) => {
     });
 });
 
-export { registerUser, loginUser, logoutUser };
+const getUserInfoByEmail = asyncHandler(async (req: Request, res: Response) => {
+  const { email } = req.params;
+  const user = await User.findOne({ email });
+  if (!user) {
+    throw new Error("User not found");
+  }
+  const response = {
+    data: {
+      user,
+    },
+  };
+  res.status(StatusCodes.OK).json({ response });
+})
+
+export { registerUser, loginUser, logoutUser, getUserInfoByEmail };

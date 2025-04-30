@@ -69,6 +69,7 @@ const addSubject = asyncHandler(
         .status(201)
         .json(new ApiResponse(200, "Subject added successfully", response));
     } catch (error) {
+      console.log(error);
       res
         .status(500)
         .json({ success: false, message: "Internal Server Error" });

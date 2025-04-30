@@ -307,4 +307,38 @@ const filterQuestion = asyncHandler(async (req: Request, res: Response) => {
   }
 });
 
-export { addQuestion, editQuestion, deleteQuestion, searchQuestion ,filterQuestion};
+const getQuestions = asyncHandler(
+  async (req: Request, res: Response, _next: NextFunction): Promise<void> => {
+   try {
+     const {classId, subjectId, difficultyLevel = "easy", totalQuestions = 10} = req.query;
+     console.log(classId, subjectId, difficultyLevel, totalQuestions);
+    if (classId === undefined || subjectId === undefined) {
+      res.status(400).json({ success: false, message: "Class and subject are required." });
+      return;
+    }
+
+     const isClassIdExist = await Class.findOne({ _id: classId }).lean().exec();
+     if (!isClassIdExist) {
+       res.status(400).json({ success: false, message: "No such class id exist." });
+       return;
+     }
+     const subject = await Subject.findOne({ _id: subjectId });
+     if (!subject) {
+       res.status(400).json({ success: false, message: "No such subject id exist." });
+       return;
+     }
+     const questions = await Question.find({
+       classId: classId,
+       subjectId: subjectId,
+       difficultyLevel: difficultyLevel,
+     }).limit(Number(totalQuestions)).select("-correctAnswer");
+     
+     res.status(200).json(new ApiResponse(200, "Questions fetched", questions));
+   }
+    catch (error) {
+    console.log(error);
+   }
+  }
+);
+
+export { addQuestion, editQuestion, deleteQuestion, searchQuestion ,filterQuestion, getQuestions};
