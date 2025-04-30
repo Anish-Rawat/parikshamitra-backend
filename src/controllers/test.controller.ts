@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import { asyncHandler } from "../utils/asyncHandler";
 import { Test } from "../models/test.model";
 import { Question } from "../models/question.model";
-import ApiResponse from "../utils/apiResponse";
 
 interface CustomRequest extends Request {
   user: {
@@ -11,7 +10,13 @@ interface CustomRequest extends Request {
 }
 
 const createTest = asyncHandler(async (req: Request, res: Response) => {
-  const { testName = '', difficultyLevel, totalQuestions, subjectId, classId } = req.body;
+  const {
+    testName = "",
+    difficultyLevel,
+    totalQuestions,
+    subjectId,
+    classId,
+  } = req.body;
   const customReq = req as CustomRequest;
   const userId = customReq.user._id;
 
@@ -122,5 +127,51 @@ const deleteTest = asyncHandler(async (req: Request, res: Response) => {
   });
 });
 
+const submitTest = asyncHandler(async (req: Request, res: Response) => {
+  const customReq = req as CustomRequest;
+  const userId = customReq.user._id;
+  const { testId } = req.query;
+  const { answers } = req.body;
 
-export { createTest, getTest, deleteTest };
+  // 1. Fetch the test
+  const test = await Test.findById(testId).lean();
+  if (!test) {
+    return res.status(404).json({ success: false, message: "Test not found" });
+  }
+
+  // 2. Create a map from submitted answers
+  const submittedMap = new Map<string, string>();
+  for (const ans of answers) {
+    submittedMap.set(ans.questionId, ans.answer);
+  }
+
+  // 3. Fetch all submitted question details in one go
+  const questionIds = answers.map((ans: any) => ans.questionId);
+  const questions = await Question.find({ _id: { $in: questionIds } }).lean();
+  
+  // 4. Compare answers
+  let totalScore = 0;
+  const evaluatedAnswers = questions.map((q) => {
+    const submitted = submittedMap.get(q._id.toString());
+    const isCorrect = submitted === q.correctAnswer;
+    if (isCorrect) totalScore += 1;
+
+    return {
+      questionId: q._id,
+      submittedAnswer: submitted,
+      correctAnswer: q.correctAnswer,
+      isCorrect,
+    };
+  });
+
+  // Optional: save result to DB for record
+
+  return res.status(200).json({
+    success: true,
+    message: "Test submitted successfully",
+    totalScore,
+    evaluatedAnswers, // you can remove this if not needed
+  });
+});
+
+export { createTest, getTest, deleteTest, submitTest };
