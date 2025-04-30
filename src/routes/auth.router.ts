@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { loginUser, logoutUser, registerUser } from "../controllers/auth.controller";
+import { getUserInfoByEmail, loginUser, logoutUser, registerUser } from "../controllers/auth.controller";
 import { verifyJWT } from "../middlewares/auth.middleware";
 
 const router = Router();
@@ -9,5 +9,6 @@ router.route("/login").post(loginUser);
 
 router.route("/logout").post(verifyJWT, logoutUser);
 
+router.route('/get-user-by-email/:email').get(getUserInfoByEmail);
 
 export default router;
