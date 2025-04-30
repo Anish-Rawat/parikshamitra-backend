@@ -7,6 +7,12 @@ const classSchema = new Schema(
             required:true,
             trim:true,
             index:true,
+        },
+        category:{
+            type:String,
+            required:true,
+            trim:true,
+            index:true,
         }
     },
     {
