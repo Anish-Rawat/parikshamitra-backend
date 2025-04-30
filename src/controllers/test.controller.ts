@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { asyncHandler } from "../utils/asyncHandler";
 import { Test } from "../models/test.model";
 import { Question } from "../models/question.model";
+import { User } from "../models/user.model";
 
 interface CustomRequest extends Request {
   user: {
@@ -148,8 +149,9 @@ const submitTest = asyncHandler(async (req: Request, res: Response) => {
   // 3. Fetch all submitted question details in one go
   const questionIds = answers.map((ans: any) => ans.questionId);
   const questions = await Question.find({ _id: { $in: questionIds } }).lean();
-  
+
   // 4. Compare answers
+
   let totalScore = 0;
   const evaluatedAnswers = questions.map((q) => {
     const submitted = submittedMap.get(q._id.toString());
@@ -164,7 +166,25 @@ const submitTest = asyncHandler(async (req: Request, res: Response) => {
     };
   });
 
+
   // Optional: save result to DB for record
+  const user = await User.findById(userId).lean();
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  const newTestTaken = (user.testTaken || 0) + 1;
+  const currentAvg = user.averageScore || 0;
+
+  const newAvgScore =
+    (currentAvg * (newTestTaken - 1) + totalScore) / newTestTaken;
+  await User.updateOne(
+    { _id: userId },
+    {
+      $inc: { testTaken: 1 },
+      $set: { averageScore: newAvgScore },
+    }
+  );
 
   return res.status(200).json({
     success: true,

@@ -22,5 +22,5 @@ const subjectSchema = new Schema(
     }
 )
 
-subjectSchema.index({ className: 1, subjectName: 1 }, { unique: true });
+subjectSchema.index({ classId: 1, subjectName: 1 }, { unique: true });
 export const Subject = mongoose.model('Subject',subjectSchema)
