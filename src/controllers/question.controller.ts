@@ -331,7 +331,7 @@ const getQuestions = asyncHandler(
        classId: classId,
        subjectId: subjectId,
        difficultyLevel: difficultyLevel,
-     }).limit(Number(totalQuestions));
+     }).limit(Number(totalQuestions)).select("-correctAnswer");
      
      res.status(200).json(new ApiResponse(200, "Questions fetched", questions));
    }
