@@ -32,22 +32,14 @@ const testSchema = new Schema(
       ref: "Class",
       required: true,
     },
-    // totalMarks: {
-    //   type: Number,
-    //   required: true,
-    // },
-    // questionsAttempted: {
-    //   type: Number,
-    //   required: true,
-    // },
-    // marksObtained: {
-    //   type: Number,
-    //   required: true,
-    // },
-    // score: {
-    //   type: Number,
-    //   required: true,
-    // },
+    totalMarks: {
+      type: Number,
+      required: true,
+    },
+    marksObtained: {
+      type: Number,
+      required: true,
+    },
   },
   { timestamps: true }
 );
