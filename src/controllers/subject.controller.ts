@@ -7,12 +7,17 @@ import { NextFunction, Request, Response } from "express";
 const getSubjects = asyncHandler(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const response = await Subject.find();
-      const totalRecords = getSubjects.length;
+      const { classId } = req.query;
+      const subjectResponse = await Subject.find({
+        classId: classId,
+      })
+        .lean()
+        .exec();
+      const totalRecords = subjectResponse.length;
       res.status(201).json(
         new ApiResponse(200, "subject fetched successfully", {
           totalRecords,
-          result: response,
+          result: subjectResponse,
         })
       );
     } catch (error) {
@@ -41,7 +46,6 @@ const addSubject = asyncHandler(
         classId: classId,
         subjectName: subjectName,
       });
-      console.log("existing", existing);
       if (existing) {
         res.status(409).json({
           success: false,
@@ -51,7 +55,6 @@ const addSubject = asyncHandler(
       }
 
       const isClassIdExist = await Class.findById(classId);
-      console.log("isClassIdExist", isClassIdExist);
 
       if (!isClassIdExist) {
         res
@@ -65,16 +68,17 @@ const addSubject = asyncHandler(
       });
 
       // After saving subject
-      const updatedSelectedClassInfo = await Class.findByIdAndUpdate(classId, {
-        $inc: { totalSubjects: 1 },
-      });
-      console.log("updatedSelectedClassInfo", updatedSelectedClassInfo);
-      console.log("response", response);
+      const updatedSelectedClassInfo = await Class.findByIdAndUpdate(
+        classId,
+        {
+          $inc: { totalSubjects: 1 },
+        },
+        { new: true }
+      );
       res
         .status(201)
         .json(new ApiResponse(200, "Subject added successfully", response));
-    } catch (error:unknown) {
-      console.log(error);
+    } catch (error: unknown) {
       // Duplicate key error from MongoDB
       if (error.code === 11000) {
         res.status(409).json({
@@ -134,9 +138,9 @@ const editSubject = asyncHandler(
 const deleteSubject = asyncHandler(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const selectedSubjectId = req.params.id;
+      const {classId,subjectId} = req.query;
       const isSelectedSubjectIdExist = await Subject.findById(
-        selectedSubjectId
+        subjectId
       );
       if (!isSelectedSubjectIdExist) {
         res
@@ -144,9 +148,17 @@ const deleteSubject = asyncHandler(
           .json({ success: false, message: "No such subject id exist." });
         return;
       }
-      const deletedSubject = await Subject.findByIdAndDelete(selectedSubjectId);
+      const deletedSubject = await Subject.findByIdAndDelete(subjectId);
 
       if (deletedSubject) {
+        // After saving subject
+        const updatedSelectedClassInfo = await Class.findByIdAndUpdate(
+          classId,
+          {
+            $inc: { totalSubjects: -1 },
+          },
+          { new: true }
+        );
         res
           .status(201)
           .json(new ApiResponse(200, "Subject deleted successfully."));

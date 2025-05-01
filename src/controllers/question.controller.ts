@@ -16,9 +16,9 @@ const addQuestion = asyncHandler(
         question,
         options,
         correctAnswer,
+        totalQuestionsByClassAndSubject = 0,
       } = req.body;
 
-      console.log("-----------", req.body);
       if (!(classId || subjectId || difficultyLevel)) {
         res
           .status(400)
@@ -58,7 +58,6 @@ const addQuestion = asyncHandler(
       const isClassIdExist = await Class.findById(classId);
       const isSubjectIdExist = await Subject.findById(classId);
 
-      console.log("isClassIdExist", isClassIdExist);
       if (!(isClassIdExist || isSubjectIdExist)) {
         res.status(400).json({
           success: false,
@@ -72,8 +71,16 @@ const addQuestion = asyncHandler(
         question: question,
         options: options,
         correctAnswer: correctAnswer,
+        totalQuestionsByClassAndSubject: totalQuestionsByClassAndSubject,
       });
-      console.log(response);
+      // After saving subject
+      const updatedSelectedSubjectInfo = await Subject.findByIdAndUpdate(
+        subjectId,
+        {
+          $inc: { totalQuestionsByClassAndSubject: 1 },
+        },
+        { new: true }
+      );
       res
         .status(200)
         .json(new ApiResponse(200, "question added successfully", response));
@@ -127,7 +134,6 @@ const editQuestion = asyncHandler(async (req: Request, res: Response) => {
         );
       return;
     }
-    console.log(req.body);
     if (!(question || options || correctAnswer)) {
       res
         .status(400)
@@ -175,23 +181,25 @@ const editQuestion = asyncHandler(async (req: Request, res: Response) => {
 
 const deleteQuestion = asyncHandler(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    console.log(
-      "http://localhost:3000/api/v1/admin/question/680b38086031b9480572dce5"
-    );
     try {
-      const selectedQuestionId = req.params.id;
-      const isSelectedQuestionIdExist =
-        await Subject.findById(selectedQuestionId);
+      const { classId, subjectId, questionId } = req.query;
+      const isSelectedQuestionIdExist = await Question.findById(questionId);
       if (!isSelectedQuestionIdExist) {
         res
           .status(400)
           .json({ success: false, message: "No such question id exist." });
         return;
       }
-      const deletedQuestion =
-        await Question.findByIdAndDelete(selectedQuestionId);
-      console.log("deletedQuestion", deletedQuestion);
+      const deletedQuestion = await Question.findByIdAndDelete(questionId);
       if (deletedQuestion) {
+        // After deleting subject
+        const updatedSelectedSubjectInfo = await Subject.findByIdAndUpdate(
+          subjectId,
+          {
+            $inc: { totalQuestionsByClassAndSubject: -1 },
+          },
+          { new: true }
+        );
         res
           .status(201)
           .json(
@@ -229,7 +237,6 @@ const searchQuestion = asyncHandler(async (req: Request, res: Response) => {
       .skip(howManyQuestionToSkip)
       .limit(Number(limit));
 
-    console.log(searchedResult);
     res
       .status(200)
       .json(
@@ -266,20 +273,13 @@ const filterQuestion = asyncHandler(async (req: Request, res: Response) => {
     const { subjectId, classId, difficultyLevel } = req.body;
     const { page = 1, limit = 10 } = req.query;
     if (!(subjectId || classId || difficultyLevel)) {
-      res
-        .status(400)
-        .json({
-          success: false,
-          message:
-            "Please select either class, subject or difficulty level to filter the data.",
-        });
+      res.status(400).json({
+        success: false,
+        message:
+          "Please select either class, subject or difficulty level to filter the data.",
+      });
     }
     const howManyQuestionToSkip = (Number(page) - 1) * Number(limit);
-    console.log(
-      "(Number(page)-1)*Number(limit)",
-      (Number(page) - 1) * Number(limit)
-    );
-    console.log("Number(limit)", limit);
     const filteredQuestion = await Question.find({
       classId: classId.toLowerCase().trim(),
       subjectId: subjectId.toLowerCase().trim(),
@@ -367,7 +367,7 @@ const getQuestions = asyncHandler(
           },
         },
       ]);
-
+      console.log("questions", questions);
       res
         .status(200)
         .json(new ApiResponse(200, "Questions fetched", questions));
