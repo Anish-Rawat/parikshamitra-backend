@@ -4,6 +4,7 @@ import ApiResponse from "../utils/apiResponse";
 import { Question } from "../models/question.model";
 import { Class } from "../models/class.model";
 import { Subject } from "../models/subject.model";
+import mongoose from "mongoose";
 
 const addQuestion = asyncHandler(
   async (req: Request, res: Response, _next: NextFunction): Promise<void> => {
@@ -15,9 +16,9 @@ const addQuestion = asyncHandler(
         question,
         options,
         correctAnswer,
+        totalQuestionsByClassAndSubject = 0,
       } = req.body;
 
-      console.log("-----------", req.body);
       if (!(classId || subjectId || difficultyLevel)) {
         res
           .status(400)
@@ -43,7 +44,7 @@ const addQuestion = asyncHandler(
 
       const allQuestions = await Question.find();
       const duplicate = allQuestions.find(
-        (item:any) =>
+        (item: any) =>
           item.question.toLowerCase().trim() === question.toLowerCase().trim()
       );
 
@@ -57,7 +58,6 @@ const addQuestion = asyncHandler(
       const isClassIdExist = await Class.findById(classId);
       const isSubjectIdExist = await Subject.findById(classId);
 
-      console.log("isClassIdExist", isClassIdExist);
       if (!(isClassIdExist || isSubjectIdExist)) {
         res.status(400).json({
           success: false,
@@ -65,14 +65,22 @@ const addQuestion = asyncHandler(
         });
       }
       const response = await Question.create({
-        classId:classId.toLowerCase().trim(),
-        subjectId:subjectId.toLowerCase().trim(),
-        difficultyLevel:difficultyLevel.toLowerCase().trim(),
-        question:question,
-        options:options,
-        correctAnswer:correctAnswer
+        classId: classId.toLowerCase().trim(),
+        subjectId: subjectId.toLowerCase().trim(),
+        difficultyLevel: difficultyLevel.toLowerCase().trim(),
+        question: question,
+        options: options,
+        correctAnswer: correctAnswer,
+        totalQuestionsByClassAndSubject: totalQuestionsByClassAndSubject,
       });
-      console.log(response);
+      // After saving subject
+      const updatedSelectedSubjectInfo = await Subject.findByIdAndUpdate(
+        subjectId,
+        {
+          $inc: { totalQuestionsByClassAndSubject: 1 },
+        },
+        { new: true }
+      );
       res
         .status(200)
         .json(new ApiResponse(200, "question added successfully", response));
@@ -126,7 +134,6 @@ const editQuestion = asyncHandler(async (req: Request, res: Response) => {
         );
       return;
     }
-    console.log(req.body);
     if (!(question || options || correctAnswer)) {
       res
         .status(400)
@@ -174,25 +181,25 @@ const editQuestion = asyncHandler(async (req: Request, res: Response) => {
 
 const deleteQuestion = asyncHandler(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    console.log(
-      "http://localhost:3000/api/v1/admin/question/680b38086031b9480572dce5"
-    );
     try {
-      const selectedQuestionId = req.params.id;
-      const isSelectedQuestionIdExist = await Subject.findById(
-        selectedQuestionId
-      );
+      const { classId, subjectId, questionId } = req.query;
+      const isSelectedQuestionIdExist = await Question.findById(questionId);
       if (!isSelectedQuestionIdExist) {
         res
           .status(400)
           .json({ success: false, message: "No such question id exist." });
         return;
       }
-      const deletedQuestion = await Question.findByIdAndDelete(
-        selectedQuestionId
-      );
-      console.log("deletedQuestion", deletedQuestion);
+      const deletedQuestion = await Question.findByIdAndDelete(questionId);
       if (deletedQuestion) {
+        // After deleting subject
+        const updatedSelectedSubjectInfo = await Subject.findByIdAndUpdate(
+          subjectId,
+          {
+            $inc: { totalQuestionsByClassAndSubject: -1 },
+          },
+          { new: true }
+        );
         res
           .status(201)
           .json(
@@ -217,18 +224,19 @@ const deleteQuestion = asyncHandler(
 
 const searchQuestion = asyncHandler(async (req: Request, res: Response) => {
   try {
-    const { searchString , page=1, limit=10} = req.query;
+    const { searchString, page = 1, limit = 10 } = req.query;
     if (!searchString) {
       res
         .status(400)
         .json({ success: false, message: "Search string is required." });
     }
-    const howManyQuestionToSkip = (Number(page)-1)*Number(limit);
+    const howManyQuestionToSkip = (Number(page) - 1) * Number(limit);
     const searchedResult = await Question.find({
       question: { $regex: searchString, $options: "i" },
-    }).skip(howManyQuestionToSkip).limit(Number(limit));
-    
-    console.log(searchedResult);
+    })
+      .skip(howManyQuestionToSkip)
+      .limit(Number(limit));
+
     res
       .status(200)
       .json(
@@ -262,25 +270,29 @@ const searchQuestion = asyncHandler(async (req: Request, res: Response) => {
 
 const filterQuestion = asyncHandler(async (req: Request, res: Response) => {
   try {
-    const {subjectId,classId,difficultyLevel} = req.body;
-    const {page=1,limit=10}= req.query;
-    if(!(subjectId||classId||difficultyLevel)){
-      res
-        .status(400)
-        .json({ success: false, message: "Please select either class, subject or difficulty level to filter the data." });
+    const { subjectId, classId, difficultyLevel } = req.body;
+    const { page = 1, limit = 10 } = req.query;
+    if (!(subjectId || classId || difficultyLevel)) {
+      res.status(400).json({
+        success: false,
+        message:
+          "Please select either class, subject or difficulty level to filter the data.",
+      });
     }
-    const howManyQuestionToSkip = (Number(page)-1)*Number(limit);
-    console.log("(Number(page)-1)*Number(limit)",(Number(page)-1)*Number(limit))
-    console.log("Number(limit)",limit)
+    const howManyQuestionToSkip = (Number(page) - 1) * Number(limit);
     const filteredQuestion = await Question.find({
-      classId:classId.toLowerCase().trim(),
-      subjectId:subjectId.toLowerCase().trim(),
-      difficultyLevel:difficultyLevel.toLowerCase().trim()
-    }).skip(howManyQuestionToSkip).limit(Number(limit))
+      classId: classId.toLowerCase().trim(),
+      subjectId: subjectId.toLowerCase().trim(),
+      difficultyLevel: difficultyLevel.toLowerCase().trim(),
+    })
+      .skip(howManyQuestionToSkip)
+      .limit(Number(limit));
 
-    res.status(200).json(
-      new ApiResponse(200,"Data filtered successfully",filteredQuestion)
-    )
+    res
+      .status(200)
+      .json(
+        new ApiResponse(200, "Data filtered successfully", filteredQuestion)
+      );
   } catch (error) {
     if (
       error &&
@@ -307,4 +319,69 @@ const filterQuestion = asyncHandler(async (req: Request, res: Response) => {
   }
 });
 
-export { addQuestion, editQuestion, deleteQuestion, searchQuestion ,filterQuestion};
+const getQuestions = asyncHandler(
+  async (req: Request, res: Response, _next: NextFunction): Promise<void> => {
+    try {
+      const {
+        classId,
+        subjectId,
+        difficultyLevel = "easy",
+        totalQuestions = 10,
+      } = req.query;
+      if (classId === undefined || subjectId === undefined) {
+        res
+          .status(400)
+          .json({ success: false, message: "Class and subject are required." });
+        return;
+      }
+
+      const isClassIdExist = await Class.findOne({ _id: classId })
+        .lean()
+        .exec();
+      if (!isClassIdExist) {
+        res
+          .status(400)
+          .json({ success: false, message: "No such class id exist." });
+        return;
+      }
+      const subject = await Subject.findOne({ _id: subjectId });
+      if (!subject) {
+        res
+          .status(400)
+          .json({ success: false, message: "No such subject id exist." });
+        return;
+      }
+      const questions = await Question.aggregate([
+        {
+          $match: {
+            classId: new mongoose.Types.ObjectId(classId as string),
+            subjectId: new mongoose.Types.ObjectId(subjectId as string),
+            difficultyLevel: difficultyLevel,
+          },
+        },
+        { $sample: { size: Number(totalQuestions) } },
+        {
+          $project: {
+            correctAnswer: 0,
+            __v: 0,
+          },
+        },
+      ]);
+      console.log("questions", questions);
+      res
+        .status(200)
+        .json(new ApiResponse(200, "Questions fetched", questions));
+    } catch (error) {
+      console.log(error);
+    }
+  }
+);
+
+export {
+  addQuestion,
+  editQuestion,
+  deleteQuestion,
+  searchQuestion,
+  filterQuestion,
+  getQuestions,
+};

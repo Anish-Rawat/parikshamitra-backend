@@ -2,12 +2,13 @@ import { NextFunction, Request, Response } from "express";
 import { asyncHandler } from "../utils/asyncHandler";
 import ApiResponse from "../utils/apiResponse";
 import { Class } from "../models/class.model";
+import { Subject } from "../models/subject.model";
 
 const addClass = asyncHandler(
   async (req: Request, res: Response, _next: NextFunction): Promise<void> => {
     try {
-      const { className ,category} = req.body;
-      if (!(className.trim() || category.trim())) {
+      const { className, category } = req.body;
+      if (!(className.trim() && category.trim())) {
         res.status(400).json(new ApiResponse(400, "Class name is required."));
         return;
       }
@@ -26,16 +27,51 @@ const addClass = asyncHandler(
 
       const normalizedClass = className.toLowerCase();
       const normalizedCategory = category.toLowerCase();
-      const response = await Class.create({ className: normalizedClass ,category:normalizedCategory});
+      const response = await Class.create({
+        className: normalizedClass,
+        category: normalizedCategory,
+      });
       res
         .status(200)
         .json(new ApiResponse(200, "class added successfully", response));
     } catch (error) {
       res
         .status(500)
-        .json({ success: false, message: "Internal Server Error" });
+        .json({ success: false, message: "Internal Server Error", error });
     }
   }
 );
 
-export { addClass };
+const getClassesAndStreams = asyncHandler(
+  async (req: Request, res: Response, _next: NextFunction): Promise<void> => {
+    try {
+      const classes = await Class.find().lean().exec();
+
+      // Fetch question counts grouped by classId
+      // const subjectCounts = await Subject.aggregate([
+      //   {
+      //     $group: {
+      //       _id: "$classId",
+      //       totalQuestions: { $sum: 1 },
+      //     },
+      //   },
+      // ]);
+
+      // Add question counts to classes
+      // (classes as any).forEach((classItem: any) => {
+      //   const subjectCount = subjectCounts.find(
+      //     (item) => item._id.toString() === classItem._id.toString()
+      //   );
+      //   classItem.totalQuestions = subjectCount?.totalQuestions ?? 0;
+      // });
+
+      res.status(200).json(new ApiResponse(200, "Classes fetched", classes));
+    } catch (error) {
+      res
+        .status(500)
+        .json({ success: false, message: "Internal Server Error", error });
+    }
+  }
+);
+
+export { addClass, getClassesAndStreams };

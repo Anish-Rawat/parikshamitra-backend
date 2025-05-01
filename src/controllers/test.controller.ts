@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { asyncHandler } from "../utils/asyncHandler";
 import { Test } from "../models/test.model";
 import { Question } from "../models/question.model";
+import { User } from "../models/user.model";
 
 interface CustomRequest extends Request {
   user: {
@@ -10,40 +11,15 @@ interface CustomRequest extends Request {
 }
 
 const createTest = asyncHandler(async (req: Request, res: Response) => {
-  const { testName, difficultyLevel, totalQuestions, subjectId, classId } = req.body;
+  const {
+    testName = "",
+    difficultyLevel,
+    totalQuestions,
+    subjectId,
+    classId,
+  } = req.body;
   const customReq = req as CustomRequest;
   const userId = customReq.user._id;
-
-  // const allQuestion = questions.filter(
-  //   (question) => question.subjectId === subjectId
-  // );
-  // const selectedNumberOfQuestions = allQuestion.slice(0, totalQuestions);
-
-  // const questionsResponse = [];
-  // if (difficultyLevel === "easy") {
-  //   const easyQuestions = selectedNumberOfQuestions.filter(
-  //     (question) => question.difficultyLevel === "easy"
-  //   );
-  //   questionsResponse.push(easyQuestions);
-  // } else if (difficultyLevel === "medium") {
-  //   const mediumQuestions = selectedNumberOfQuestions.filter(
-  //     (question) => question.difficultyLevel === "medium"
-  //   );
-  //   questionsResponse.push(mediumQuestions);
-  // } else if (difficultyLevel === "hard") {
-  //   const hardQuestions = selectedNumberOfQuestions.filter(
-  //     (question) => question.difficultyLevel === "hard"
-  //   );
-  //   questionsResponse.push(hardQuestions);
-  // } else {
-  //   for (let i = 0; i < totalQuestions; i++) {
-  //     const randomQuestion =
-  //       selectedNumberOfQuestions[
-  //         Math.floor(Math.random() * selectedNumberOfQuestions.length)
-  //       ];
-  //     questionsResponse.push(randomQuestion);
-  //   }
-  // }
 
   const testDetails = await Test.create({
     userId,
@@ -161,6 +137,7 @@ const deleteTest = asyncHandler(async (req: Request, res: Response) => {
   });
 });
 
+<<<<<<< HEAD
 <<<<<<< Updated upstream
 const getQuestions = asyncHandler(async (req: Request, res: Response) => {
   const { testId } = req.params;
@@ -173,6 +150,8 @@ const getQuestions = asyncHandler(async (req: Request, res: Response) => {
   })
   res.status(200).json({
 =======
+=======
+>>>>>>> e8d0b15b372a1b4fd91fe668556889107bfb7de6
 const submitTest = asyncHandler(async (req: Request, res: Response) => {
   const customReq = req as CustomRequest;
   const userId = customReq.user._id;
@@ -231,6 +210,7 @@ const submitTest = asyncHandler(async (req: Request, res: Response) => {
     }
   );
 
+<<<<<<< HEAD
   await Test.updateOne(
     { _id: testId },
     {
@@ -240,10 +220,14 @@ const submitTest = asyncHandler(async (req: Request, res: Response) => {
 
   return res.status(200).json({
 >>>>>>> Stashed changes
+=======
+  return res.status(200).json({
+>>>>>>> e8d0b15b372a1b4fd91fe668556889107bfb7de6
     success: true,
-    message: "Questions fetched successfully",
-    questions,
-  })
+    message: "Test submitted successfully",
+    totalScore,
+    evaluatedAnswers, // you can remove this if not needed
+  });
 });
 
-export { createTest, getTest, deleteTest, getQuestions };
+export { createTest, getTest, deleteTest, submitTest };
