@@ -8,6 +8,7 @@ const subjectSchema = new Schema(
             trim:true,
             index:true,
             allowNull: false,
+            lowercase: true,
         },
         classId:{
             type:Schema.Types.ObjectId,
@@ -22,5 +23,5 @@ const subjectSchema = new Schema(
     }
 )
 
-subjectSchema.index({ classId: 1, subjectName: 1 }, { unique: true });
+// subjectSchema.index({ classId: 1, subjectName: 1 }, { unique: true });
 export const Subject = mongoose.model('Subject',subjectSchema)

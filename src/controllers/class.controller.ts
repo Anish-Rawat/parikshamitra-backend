@@ -8,7 +8,7 @@ const addClass = asyncHandler(
   async (req: Request, res: Response, _next: NextFunction): Promise<void> => {
     try {
       const { className, category } = req.body;
-      if (!(className.trim() || category.trim())) {
+      if (!(className.trim() && category.trim())) {
         res.status(400).json(new ApiResponse(400, "Class name is required."));
         return;
       }
@@ -46,7 +46,17 @@ const getClassesAndStreams = asyncHandler(
   async (req: Request, res: Response, _next: NextFunction): Promise<void> => {
     try {
       const classes = await Class.find().lean().exec();
-      
+      // const classesWithSubjectCount = await Promise.all(
+      //   classes.map(async (cls) => {
+      //     const count = await Subject.countDocuments({ classId: cls._id });
+      //     return {
+      //       ...cls,
+      //       totalSubjects: count
+      //     };
+      //   })
+      // );
+      // console.log("Claases",classesWithSubjectCount);
+
       // Fetch question counts grouped by classId
       const subjectCounts = await Subject.aggregate([
         {
