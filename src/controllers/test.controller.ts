@@ -28,12 +28,16 @@ const createTest = asyncHandler(async (req: Request, res: Response) => {
     totalQuestions,
     subjectId,
     classId,
+    marksObtained: 0,
+    totalMarks: totalQuestions * 10,
   });
-
-  res.status(200).json({
+  const response = await Test.findById(testDetails._id).select(
+    " -marksObtained"
+  )
+    res.status(200).json({
     success: true,
     message: "test created successfully",
-    testDetails,
+    response,
   });
 });
 
@@ -80,8 +84,9 @@ const getTest = asyncHandler(async (req: Request, res: Response) => {
       .limit(Number(limit))
       .sort({ [sortBy as string]: sortOrder })
       .populate("userId", "userName")
+      .populate("subjectId", "subjectName")
+      .populate("classId", "className")
       .lean();
-
     const formattedTests = testDetails.map((test: any) => ({
       _id: test._id,
       testName: test.testName,
@@ -90,6 +95,10 @@ const getTest = asyncHandler(async (req: Request, res: Response) => {
       createdBy: test.userId?.userName,
       createdAt: test.createdAt,
       updatedAt: test.updatedAt,
+      marksObtained: test.marksObtained ?? 0,
+      totalMarks: test.totalMarks ?? 0,
+      subjectName: test.subjectId?.subjectName,
+      className: test.classId?.className,
     }));
 
     const totalTests = await Test.countDocuments({
@@ -183,6 +192,13 @@ const submitTest = asyncHandler(async (req: Request, res: Response) => {
     {
       $inc: { testTaken: 1 },
       $set: { averageScore: newAvgScore },
+    }
+  );
+
+  await Test.updateOne(
+    { _id: testId },
+    {
+      $inc: { marksObtained: totalScore },
     }
   );
 

@@ -2,6 +2,13 @@ import { Request, Response } from "express";
 import { User } from "../models/user.model";
 import { asyncHandler } from "../utils/asyncHandler";
 import { StatusCodes } from "http-status-codes";
+import { Test } from "../models/test.model";
+
+interface CustomRequest extends Request {
+  user: {
+    _id: string;
+  };
+}
 
 const getAllUsers = asyncHandler(async (req: Request, res: Response) => {
   const { userId } = req.params;
@@ -115,6 +122,24 @@ const getDashboardTilesInfo = asyncHandler(async (req: Request, res: Response) =
     totalTestTaken,
     averageScore: averageScore / totalTestTaken,
   });
-})
+});
 
-export { getAllUsers, blockUserById, getDashboardTilesInfo };
+const getUserTilesInfo = asyncHandler(async (req: Request, res: Response) => {
+  const customReq = req as CustomRequest;
+  const userId = customReq.user._id;
+  const user = await User.findById(userId).lean().exec();
+  if (!user) {
+    throw new Error("User not found");
+  }
+  const testInfo = await Test.find({userId}).lean().exec();
+  if (!testInfo) {
+    throw new Error("Test info not found");
+  }
+  res.status(StatusCodes.OK).json({
+    testTaken: user.testTaken,
+    averageScore: user.averageScore,
+  });
+
+});
+
+export { getAllUsers, blockUserById, getDashboardTilesInfo, getUserTilesInfo };

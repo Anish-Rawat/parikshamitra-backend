@@ -41,5 +41,6 @@ import testRouter from "./routes/test.router"
 // client API`s
 app.use('/api/v1/client/test', testRouter);
 app.use('/api/v1/client/user',authRouter);
+app.use('/api/v1/client/dashboard',userRouter);
 
 export default app
