@@ -100,8 +100,9 @@ const loginUser = asyncHandler(async (req: Request, res: Response) => {
     user._id
   );
   const loggedInUser = await User.findById(user._id).select(
-    "-password -refreshToken"
-  );
+    "-password"
+  ).lean();
+  loggedInUser.accessToken = accessToken;
   const options = {
     httpOnly: true,
     secure: true,
