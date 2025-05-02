@@ -49,7 +49,10 @@ const getTest = asyncHandler(async (req: Request, res: Response) => {
     const testDetails = await Test.findById(testId).populate({
       path: "userId",
       select: "userName",
-    });
+    })
+    .populate("subjectId", "subjectName")
+    .populate("classId", "className")
+    .lean();
     if (!testDetails) {
       throw new Error("Test not found");
     }
@@ -61,6 +64,10 @@ const getTest = asyncHandler(async (req: Request, res: Response) => {
       createdBy: testDetails.userId?.userName,
       createdAt: testDetails.createdAt,
       updatedAt: testDetails.updatedAt,
+      subjectName: testDetails.subjectId?.subjectName,
+      className: testDetails.classId?.className,
+      marksObtained: testDetails.marksObtained ?? 0,
+      totalMarks: testDetails.totalMarks ?? 0,
     };
     res.status(200).json({ formattedTest });
   } else {
