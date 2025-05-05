@@ -42,6 +42,32 @@ const addClass = asyncHandler(
   }
 );
 
+const deleteClass = asyncHandler(
+  async (req: Request, res: Response, _next: NextFunction): Promise<void> => {
+    try {
+      const { classId } = req.query;
+      if (!classId) {
+        res.status(400).json(new ApiResponse(400, "Class is not selected to delete."));
+        return;
+      }
+      
+      const isSelectedClassIdExist = await Class.findById(classId);
+      if(!isSelectedClassIdExist){
+        res.status(400).json(new ApiResponse(400, "No such class exist."));
+        return;
+      }
+      const response = await Class.findByIdAndDelete(classId)
+      res
+        .status(200)
+        .json(new ApiResponse(200, "class deleted successfully", response));
+    } catch (error) {
+      res
+        .status(500)
+        .json({ success: false, message: "Internal Server Error", error });
+    }
+  }
+);
+
 const getClassesAndStreams = asyncHandler(
   async (req: Request, res: Response, _next: NextFunction): Promise<void> => {
     try {
@@ -74,4 +100,4 @@ const getClassesAndStreams = asyncHandler(
   }
 );
 
-export { addClass, getClassesAndStreams };
+export { addClass, getClassesAndStreams, deleteClass};

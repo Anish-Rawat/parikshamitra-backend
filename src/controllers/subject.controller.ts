@@ -32,7 +32,7 @@ const addSubject = asyncHandler(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { subjectName, classId, totalSubjects = 0 } = req.body;
-
+      console.log("req.body",req.body);
       if (!classId || !subjectName) {
         res.status(400).json({
           success: false,
