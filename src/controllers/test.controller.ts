@@ -29,12 +29,12 @@ const createTest = asyncHandler(async (req: Request, res: Response) => {
     subjectId,
     classId,
     marksObtained: 0,
-    totalMarks: totalQuestions * 10,
+    totalMarks: totalQuestions,
   });
   const response = await Test.findById(testDetails._id).select(
     " -marksObtained"
-  )
-    res.status(200).json({
+  );
+  res.status(200).json({
     success: true,
     message: "test created successfully",
     response,
@@ -46,13 +46,14 @@ const getTest = asyncHandler(async (req: Request, res: Response) => {
   const userId = customReq.user._id;
   const { testId } = req.params;
   if (testId) {
-    const testDetails = await Test.findById(testId).populate({
-      path: "userId",
-      select: "userName",
-    })
-    .populate("subjectId", "subjectName")
-    .populate("classId", "className")
-    .lean();
+    const testDetails = await Test.findById(testId)
+      .populate({
+        path: "userId",
+        select: "userName",
+      })
+      .populate("subjectId", "subjectName")
+      .populate("classId", "className")
+      .lean();
     if (!testDetails) {
       throw new Error("Test not found");
     }
@@ -68,6 +69,8 @@ const getTest = asyncHandler(async (req: Request, res: Response) => {
       className: testDetails.classId?.className,
       marksObtained: testDetails.marksObtained ?? 0,
       totalMarks: testDetails.totalMarks ?? 0,
+      avgScore:
+        testDetails.marksObtained / testDetails.totalMarks * 100,
     };
     res.status(200).json({ formattedTest });
   } else {
@@ -84,7 +87,7 @@ const getTest = asyncHandler(async (req: Request, res: Response) => {
       userId,
       $or: [
         { testName: { $regex: search || "", $options: "i" } },
-        { difficultyLevel: { $regex: search || "", $options: "i" } },
+        { difficultyLevel: { $regex: search || "", $options: "i" }, },
       ],
     })
       .skip(skip)
@@ -106,6 +109,7 @@ const getTest = asyncHandler(async (req: Request, res: Response) => {
       totalMarks: test.totalMarks ?? 0,
       subjectName: test.subjectId?.subjectName,
       className: test.classId?.className,
+      avgScore: test.marksObtained / test.totalMarks * 100,
     }));
 
     const totalTests = await Test.countDocuments({
