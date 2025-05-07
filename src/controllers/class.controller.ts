@@ -25,8 +25,8 @@ const addClass = asyncHandler(
         return;
       }
 
-      const normalizedClass = className.toLowerCase();
-      const normalizedCategory = category.toLowerCase();
+      const normalizedClass = className?.toLowerCase();
+      const normalizedCategory = category?.toLowerCase();
       const response = await Class.create({
         className: normalizedClass,
         category: normalizedCategory,
@@ -68,6 +68,38 @@ const deleteClass = asyncHandler(
   }
 );
 
+const editClass = asyncHandler(
+  async (req: Request, res: Response, _next: NextFunction): Promise<void> => {
+    try {
+      const { classId } = req.query;
+      const {category,className} = req.body;
+      console.log("className",className,"category",category)
+      if (!classId) {
+        res.status(400).json(new ApiResponse(400, "Class is not selected to edit."));
+        return;
+      }
+      
+      const isSelectedClassIdExist = await Class.findById(classId);
+      if(!isSelectedClassIdExist){
+        res.status(400).json(new ApiResponse(400, "No such class exist."));
+        return;
+      }
+      const normalizedClass = className?.toLowerCase();
+      const normalizedCategory = category?.toLowerCase();
+      console.log("normalized classs",normalizedCategory,normalizedClass)
+      const response = await Class.findByIdAndUpdate(classId,{className:normalizedClass,category:normalizedCategory},{new:true})
+      console.log("response",response)
+      res
+        .status(200)
+        .json(new ApiResponse(200, "class edit successfully", response));
+    } catch (error) {
+      res
+        .status(500)
+        .json({ success: false, message: "Internal Server Error", error });
+    }
+  }
+);
+
 const getClassesAndStreams = asyncHandler(
   async (req: Request, res: Response, _next: NextFunction): Promise<void> => {
     try {
@@ -100,4 +132,4 @@ const getClassesAndStreams = asyncHandler(
   }
 );
 
-export { addClass, getClassesAndStreams, deleteClass};
+export { addClass, getClassesAndStreams, deleteClass, editClass};
