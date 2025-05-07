@@ -42,8 +42,6 @@ const createTest = asyncHandler(async (req: Request, res: Response) => {
 });
 
 const getTest = asyncHandler(async (req: Request, res: Response) => {
-  const customReq = req as CustomRequest;
-  const userId = customReq.user._id;
   const { testId } = req.params;
   if (testId) {
     const testDetails = await Test.findById(testId)
@@ -69,8 +67,7 @@ const getTest = asyncHandler(async (req: Request, res: Response) => {
       className: testDetails.classId?.className,
       marksObtained: testDetails.marksObtained ?? 0,
       totalMarks: testDetails.totalMarks ?? 0,
-      avgScore:
-        testDetails.marksObtained / testDetails.totalMarks * 100,
+      avgScore: (testDetails.marksObtained / testDetails.totalMarks) * 100,
     };
     res.status(200).json({ formattedTest });
   } else {
@@ -84,10 +81,9 @@ const getTest = asyncHandler(async (req: Request, res: Response) => {
     const skip = (Number(pageNo || 1) - 1) * Number(limit || 10);
     const sortOrder = sortingOrder === "asc" ? 1 : -1;
     const testDetails = await Test.find({
-      userId,
       $or: [
         { testName: { $regex: search || "", $options: "i" } },
-        { difficultyLevel: { $regex: search || "", $options: "i" }, },
+        { difficultyLevel: { $regex: search || "", $options: "i" } },
       ],
     })
       .skip(skip)
@@ -109,11 +105,12 @@ const getTest = asyncHandler(async (req: Request, res: Response) => {
       totalMarks: test.totalMarks ?? 0,
       subjectName: test.subjectId?.subjectName,
       className: test.classId?.className,
-      avgScore: test.marksObtained / test.totalMarks * 100,
+      avgScore: test.totalMarks
+        ? (test.marksObtained / test.totalMarks) * 100
+        : 0,
     }));
 
     const totalTests = await Test.countDocuments({
-      userId,
       $or: [
         { testName: { $regex: search || "", $options: "i" } },
         { difficultyLevel: { $regex: search || "", $options: "i" } },
@@ -185,7 +182,6 @@ const submitTest = asyncHandler(async (req: Request, res: Response) => {
       isCorrect,
     };
   });
-
 
   // Optional: save result to DB for record
   const user = await User.findById(userId).lean();
