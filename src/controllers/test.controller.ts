@@ -151,21 +151,6 @@ const deleteTest = asyncHandler(async (req: Request, res: Response) => {
   });
 });
 
-<<<<<<< HEAD
-<<<<<<< Updated upstream
-const getQuestions = asyncHandler(async (req: Request, res: Response) => {
-  const { testId } = req.params;
-  const { testName, difficultyLevel, totalQuestions, subjectId, classId } = req.body;
-  
-  console.log(testName, difficultyLevel, totalQuestions, subjectId, testId);
-  const questions = await Question.find({
-    difficultyLevel,
-    subjectId,
-  })
-  res.status(200).json({
-=======
-=======
->>>>>>> e8d0b15b372a1b4fd91fe668556889107bfb7de6
 const submitTest = asyncHandler(async (req: Request, res: Response) => {
   const customReq = req as CustomRequest;
   const userId = customReq.user._id;
@@ -232,7 +217,6 @@ const submitTest = asyncHandler(async (req: Request, res: Response) => {
   );
 
   return res.status(200).json({
->>>>>>> e8d0b15b372a1b4fd91fe668556889107bfb7de6
     success: true,
     message: "Test submitted successfully",
     totalScore,
