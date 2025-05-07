@@ -29,12 +29,12 @@ const createTest = asyncHandler(async (req: Request, res: Response) => {
     subjectId,
     classId,
     marksObtained: 0,
-    totalMarks: totalQuestions * 10,
+    totalMarks: totalQuestions,
   });
   const response = await Test.findById(testDetails._id).select(
     " -marksObtained"
-  )
-    res.status(200).json({
+  );
+  res.status(200).json({
     success: true,
     message: "test created successfully",
     response,
@@ -42,14 +42,16 @@ const createTest = asyncHandler(async (req: Request, res: Response) => {
 });
 
 const getTest = asyncHandler(async (req: Request, res: Response) => {
-  const customReq = req as CustomRequest;
-  const userId = customReq.user._id;
   const { testId } = req.params;
   if (testId) {
-    const testDetails = await Test.findById(testId).populate({
-      path: "userId",
-      select: "userName",
-    });
+    const testDetails = await Test.findById(testId)
+      .populate({
+        path: "userId",
+        select: "userName",
+      })
+      .populate("subjectId", "subjectName")
+      .populate("classId", "className")
+      .lean();
     if (!testDetails) {
       throw new Error("Test not found");
     }
@@ -61,6 +63,11 @@ const getTest = asyncHandler(async (req: Request, res: Response) => {
       createdBy: testDetails.userId?.userName,
       createdAt: testDetails.createdAt,
       updatedAt: testDetails.updatedAt,
+      subjectName: testDetails.subjectId?.subjectName,
+      className: testDetails.classId?.className,
+      marksObtained: testDetails.marksObtained ?? 0,
+      totalMarks: testDetails.totalMarks ?? 0,
+      avgScore: (testDetails.marksObtained / testDetails.totalMarks) * 100,
     };
     res.status(200).json({ formattedTest });
   } else {
@@ -74,7 +81,6 @@ const getTest = asyncHandler(async (req: Request, res: Response) => {
     const skip = (Number(pageNo || 1) - 1) * Number(limit || 10);
     const sortOrder = sortingOrder === "asc" ? 1 : -1;
     const testDetails = await Test.find({
-      userId,
       $or: [
         { testName: { $regex: search || "", $options: "i" } },
         { difficultyLevel: { $regex: search || "", $options: "i" } },
@@ -87,7 +93,7 @@ const getTest = asyncHandler(async (req: Request, res: Response) => {
       .populate("subjectId", "subjectName")
       .populate("classId", "className")
       .lean();
-    const formattedTests = testDetails.map((test: any) => ({
+    const updatedTests = testDetails.map((test: any) => ({
       _id: test._id,
       testName: test.testName,
       difficultyLevel: test.difficultyLevel,
@@ -97,12 +103,20 @@ const getTest = asyncHandler(async (req: Request, res: Response) => {
       updatedAt: test.updatedAt,
       marksObtained: test.marksObtained ?? 0,
       totalMarks: test.totalMarks ?? 0,
+      isCompleted: test.isCompleted,
       subjectName: test.subjectId?.subjectName,
       className: test.classId?.className,
+      avgScore: test.totalMarks
+        ? (test.marksObtained / test.totalMarks) * 100
+        : 0,
     }));
 
+    const filteredTests = updatedTests.filter((test) => test.isCompleted);
+    const formattedTests = filteredTests.map(({isCompleted, ...rest}) => {
+      return { ...rest };
+    })
     const totalTests = await Test.countDocuments({
-      userId,
+      isCompleted: true,
       $or: [
         { testName: { $regex: search || "", $options: "i" } },
         { difficultyLevel: { $regex: search || "", $options: "i" } },
@@ -190,7 +204,6 @@ const submitTest = asyncHandler(async (req: Request, res: Response) => {
     };
   });
 
-
   // Optional: save result to DB for record
   const user = await User.findById(userId).lean();
   if (!user) {
@@ -210,17 +223,14 @@ const submitTest = asyncHandler(async (req: Request, res: Response) => {
     }
   );
 
-<<<<<<< HEAD
-  await Test.updateOne(
+  await Test.updateMany(
     { _id: testId },
     {
       $inc: { marksObtained: totalScore },
+      $set: { isCompleted: true },
     }
   );
 
-  return res.status(200).json({
->>>>>>> Stashed changes
-=======
   return res.status(200).json({
 >>>>>>> e8d0b15b372a1b4fd91fe668556889107bfb7de6
     success: true,

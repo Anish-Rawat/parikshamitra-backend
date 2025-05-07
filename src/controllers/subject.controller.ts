@@ -8,11 +8,18 @@ const getSubjects = asyncHandler(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { classId } = req.query;
-      const subjectResponse = await Subject.find({
-        classId: classId,
-      })
-        .lean()
-        .exec();
+      let subjectResponse;
+      if(classId){
+        subjectResponse = await Subject.find({
+          classId: classId,
+        })
+          .lean()
+          .exec();
+      }else{
+        subjectResponse = await Subject.find()
+          .lean()
+          .exec();
+      }
       const totalRecords = subjectResponse.length;
       res.status(201).json(
         new ApiResponse(200, "subject fetched successfully", {
@@ -32,7 +39,6 @@ const addSubject = asyncHandler(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { subjectName, classId, totalSubjects = 0 } = req.body;
-
       if (!classId || !subjectName) {
         res.status(400).json({
           success: false,
