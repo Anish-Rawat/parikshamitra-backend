@@ -26,12 +26,19 @@ const getTilesInfoBasedOnRange = async (period: number = 7) => {
   });
   let averageScore = 0;
   getAllUsers.forEach((user) => {
-    averageScore += user.averageScore;
+    console.log(user, '------)')
+      averageScore += user.averageScore;
   });
+  let testTakenUser = 0;
+  getAllUsers.forEach((user) => {
+    if (user.testTaken > 0) {
+      testTakenUser += 1;
+    }
+  })
   return {
     totalUsers,
     totalTestTaken,
-    averageScore: averageScore / getAllUsers.length,
+    averageScore: averageScore / testTakenUser,
   };
 };
 
