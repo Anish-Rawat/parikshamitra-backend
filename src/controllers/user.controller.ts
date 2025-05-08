@@ -10,6 +10,31 @@ interface CustomRequest extends Request {
   };
 }
 
+const getTilesInfoBasedOnRange = async (period: number = 7) => {
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - period);
+  const totalUsers = await User.countDocuments({
+    createdAt: { $gte: startDate },
+  });
+  const getAllUsers = await User.find({ createdAt: { $gte: startDate } });
+  let totalTestTaken = 0;
+  getAllUsers.forEach((user) => {
+    console.log("user", user);
+    if (user.testTaken > 0) {
+      totalTestTaken += user.testTaken;
+    }
+  });
+  let averageScore = 0;
+  getAllUsers.forEach((user) => {
+    averageScore += user.averageScore;
+  });
+  return {
+    totalUsers,
+    totalTestTaken,
+    averageScore: averageScore / getAllUsers.length,
+  };
+};
+
 const getAllUsers = asyncHandler(async (req: Request, res: Response) => {
   const { userId } = req.params;
   //fetch user from db by id
@@ -60,7 +85,7 @@ const getAllUsers = asyncHandler(async (req: Request, res: Response) => {
       data: {
         users,
         totalUsers,
-        totalPages
+        totalPages,
       },
     };
     res.status(StatusCodes.OK).json({ response });
@@ -96,33 +121,36 @@ const blockUserById = asyncHandler(async (req: Request, res: Response) => {
   res.status(StatusCodes.OK).json({ updatedUser });
 });
 
-const getDashboardTilesInfo = asyncHandler(async (req: Request, res: Response) => {
-  // total users ---> count number of users exist
-  // total test taken ---> count number of tests taken by users
-  // average score ---> average score of users ---> total score / total users
+const getDashboardTilesInfo = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { range = "day" } = req.query;
 
-  const totalUsers = await User.countDocuments();
-
-  const getAllUsers = await User.find();
-
-  let totalTestTaken = 0;
-  getAllUsers.forEach((user) => {
-    if (user.testTaken > 0) {
-      totalTestTaken += 1;
+    if (range === "day") {
+      const data = await getTilesInfoBasedOnRange(1);
+      return res.status(StatusCodes.OK).json(data);
     }
-  });
 
-  let averageScore = 0;
-  getAllUsers.forEach((user) => {
-    averageScore += user.averageScore;
-  });
+    if (range === "week") {
+      const data = await getTilesInfoBasedOnRange(7);
+      return res.status(StatusCodes.OK).json(data);
+    }
+    if (range === "month") {
+      const data = await getTilesInfoBasedOnRange(30);
+      return res.status(StatusCodes.OK).json(data);
+    }
+    if (range === "year") {
+      const data = await getTilesInfoBasedOnRange(365);
+      return res.status(StatusCodes.OK).json(data);
+    }
 
-  res.status(StatusCodes.OK).json({
-    totalUsers,
-    totalTestTaken,
-    averageScore: averageScore / totalTestTaken,
-  });
-});
+    // default case if no valid range
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      success: false,
+      message:
+        "Invalid or missing 'range' parameter. Use 'week', 'month', or 'year'.",
+    });
+  }
+);
 
 const getUserTilesInfo = asyncHandler(async (req: Request, res: Response) => {
   const customReq = req as CustomRequest;
@@ -131,7 +159,7 @@ const getUserTilesInfo = asyncHandler(async (req: Request, res: Response) => {
   if (!user) {
     throw new Error("User not found");
   }
-  const testInfo = await Test.find({userId}).lean().exec();
+  const testInfo = await Test.find({ userId }).lean().exec();
   if (!testInfo) {
     throw new Error("Test info not found");
   }
@@ -139,7 +167,6 @@ const getUserTilesInfo = asyncHandler(async (req: Request, res: Response) => {
     testTaken: user.testTaken,
     averageScore: user.averageScore,
   });
-
 });
 
 export { getAllUsers, blockUserById, getDashboardTilesInfo, getUserTilesInfo };

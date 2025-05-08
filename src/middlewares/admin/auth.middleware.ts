@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
-import { User } from "../models/user.model";
-import { asyncHandler } from "../utils/asyncHandler";
+import { Admin } from "../../models/admin.model";
+import { asyncHandler } from "../../utils/asyncHandler";
 import jwt from "jsonwebtoken";
 
 interface CustomRequest extends Request {
@@ -29,7 +29,7 @@ export const verifyJWT = asyncHandler(async (req: Request, res: Response, next: 
         .status(401)
         .json({ success: false, message: "Unauthorized request" });
     }
-    const user = await User.findById(decodedJwt._id).select(
+    const user = await Admin.findById(decodedJwt._id).select(
       "-password -refreshToken"
     );
     customReq.user = decodedJwt;
