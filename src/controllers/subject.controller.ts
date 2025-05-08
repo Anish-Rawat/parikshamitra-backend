@@ -9,22 +9,34 @@ const getSubjects = asyncHandler(
     try {
       const { classId } = req.query;
       let subjectResponse;
-      if(classId){
+      if (classId) {
         subjectResponse = await Subject.find({
           classId: classId,
         })
+          .populate("classId", "className")
           .lean()
           .exec();
-      }else{
+      } else {
         subjectResponse = await Subject.find()
+          .populate("classId", "className")
           .lean()
           .exec();
       }
       const totalRecords = subjectResponse.length;
+      console.log(subjectResponse);
+      const formattedSubjectResponse = subjectResponse.map((sub) => ({
+        _id: sub._id,
+        subjectName: sub.subjectName,
+        classId: sub.classId?._id || null,
+        className: sub.classId?.className || "",
+        totalQuestionsByClassAndSubject: sub.totalQuestionsByClassAndSubject,
+        createdAt: sub.createdAt,
+        updatedAt: sub.updatedAt,
+      }));
       res.status(201).json(
         new ApiResponse(200, "subject fetched successfully", {
           totalRecords,
-          result: subjectResponse,
+          result: formattedSubjectResponse,
         })
       );
     } catch (error) {
@@ -72,7 +84,13 @@ const addSubject = asyncHandler(
         classId: classId,
         totalSubjects: totalSubjects,
       });
-
+      let formattedAddedSubject;
+      if (response) {
+        formattedAddedSubject = {
+          ...response.toObject(),
+          className: isClassIdExist?.className,
+        };
+      }
       // After saving subject
       const updatedSelectedClassInfo = await Class.findByIdAndUpdate(
         classId,
@@ -83,7 +101,13 @@ const addSubject = asyncHandler(
       );
       res
         .status(201)
-        .json(new ApiResponse(200, "Subject added successfully", response));
+        .json(
+          new ApiResponse(
+            200,
+            "Subject added successfully",
+            formattedAddedSubject
+          )
+        );
     } catch (error: unknown) {
       // Duplicate key error from MongoDB
       if (error.code === 11000) {
@@ -104,7 +128,7 @@ const addSubject = asyncHandler(
 const editSubject = asyncHandler(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const selectedSubjectId = req.params.id;
+      const { subjectId } = req.query;
       const { subjectName, classId } = req.body;
 
       // Normalize both inputs
@@ -124,14 +148,25 @@ const editSubject = asyncHandler(
           .json({ success: false, message: "No such class id exist." });
       }
       const response = await Subject.findByIdAndUpdate(
-        selectedSubjectId,
+        subjectId,
         { subjectName: normalizedSubject, classId },
         { new: true }
       );
+      let formattedEditSubject;
+      if (response) {
+        formattedEditSubject = {
+          ...response.toObject(),
+          className: isClassIdExist?.className,
+        };
+      }
       res
         .status(201)
         .json(
-          new ApiResponse(200, "Subject info updated successfully.", response)
+          new ApiResponse(
+            200,
+            "Subject info updated successfully.",
+            formattedEditSubject
+          )
         );
     } catch (error) {
       res
@@ -144,10 +179,8 @@ const editSubject = asyncHandler(
 const deleteSubject = asyncHandler(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const {classId,subjectId} = req.query;
-      const isSelectedSubjectIdExist = await Subject.findById(
-        subjectId
-      );
+      const { classId, subjectId } = req.query;
+      const isSelectedSubjectIdExist = await Subject.findById(subjectId);
       if (!isSelectedSubjectIdExist) {
         res
           .status(400)
@@ -181,4 +214,58 @@ const deleteSubject = asyncHandler(
   }
 );
 
-export { addSubject, editSubject, deleteSubject, getSubjects };
+const filterSubjects = asyncHandler(
+  async ( req: Request,res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const {classId,page=1,limit=10}=req.query;
+      if(!classId){
+        res.status(400).json({
+          success: false,
+          message:
+            "Please select class to filter the data.",
+        });
+      }
+      const howManySubjectsToSkip = (Number(page)-1)*Number(limit);
+      const filteredSubjectByClassId = await Subject.find({classId}).populate("classId","className").skip(howManySubjectsToSkip).limit(Number(limit)).lean().exec()
+      const totalRecords = filteredSubjectByClassId.length;
+      const formattedFilteredSubjectsByClassId = filteredSubjectByClassId.map((sub) => ({
+        _id: sub._id,
+        subjectName: sub.subjectName,
+        classId: sub.classId?._id || null,
+        className: sub.classId?.className || "",
+        totalQuestionsByClassAndSubject: sub.totalQuestionsByClassAndSubject,
+        createdAt: sub.createdAt,
+        updatedAt: sub.updatedAt,
+      }));
+      res
+      .status(200)
+      .json(
+        new ApiResponse(200, "Data filtered successfully", {result : formattedFilteredSubjectsByClassId,totalRecords:totalRecords})
+      );
+    } catch (error) {
+      if (
+        error &&
+        typeof error === "object" &&
+        "name" in error &&
+        error.name === "ValidationError"
+      ) {
+        const validationError = error as any;
+  
+        const messages = Object.values(validationError.errors).map(
+          (val: any) => val.message
+        );
+  
+        res.status(400).json({
+          success: false,
+          message: messages.join(". "), // or messages[0] if you want just the first
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          message: "Internal Server Error",
+        });
+      }
+    }
+  }
+);
+export { addSubject, editSubject, deleteSubject, getSubjects, filterSubjects};
