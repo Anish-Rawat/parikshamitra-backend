@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
-import { asyncHandler } from "../utils/asyncHandler";
-import { User } from "../models/user.model";
+import { asyncHandler } from "../../utils/asyncHandler";
+import { User } from "../../models/user.model";
 import bcrypt from "bcrypt";
-import { validateEmail } from "../utils/helper";
+import { validateEmail } from "../../utils/helper";
 import { StatusCodes } from "http-status-codes";
 
 const checkPasswordMatch = async (plainText: string, hashed: string) => {
@@ -35,8 +35,13 @@ const registerUser = asyncHandler(async (req: Request, res: Response) => {
   // 5. hash password
   // 6. create user
   // 7. send response
-
   const { userName, email, password } = req.body;
+  if (!userName?.trim() || !email?.trim() || !password?.trim()) {
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      success: false,
+      message: "Please enter all fields",
+    });
+  }
   if ([userName.trim(), email.trim(), password.trim()].includes("")) {
     throw new Error("please enter all fields");
   }

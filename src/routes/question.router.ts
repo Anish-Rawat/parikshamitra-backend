@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { verifyJWT } from "../middlewares/auth.middleware";
+import { verifyJWT } from "../middlewares/user/auth.middleware";
 import { addQuestion, deleteQuestion, editQuestion, filterQuestion, getQuestions, searchQuestion } from "../controllers/question.controller";
 
 const router = Router()
