@@ -20,7 +20,6 @@ const createTest = asyncHandler(async (req: Request, res: Response) => {
   } = req.body;
   const customReq = req as CustomRequest;
   const userId = customReq.user._id;
-
   const testDetails = await Test.create({
     userId,
     testName,
@@ -49,8 +48,14 @@ const getTest = asyncHandler(async (req: Request, res: Response) => {
         path: "userId",
         select: "userName",
       })
-      .populate("subjectId", "subjectName")
-      .populate("classId", "className")
+      .populate({
+        path: "subjectId",
+        select: "subjectName",
+      })
+      .populate({
+        path: "classId",
+        select: "className",
+      })
       .lean();
     if (!testDetails) {
       throw new Error("Test not found");
@@ -93,7 +98,7 @@ const getTest = asyncHandler(async (req: Request, res: Response) => {
       .populate("subjectId", "subjectName")
       .populate("classId", "className")
       .lean();
-    const formattedTests = testDetails.map((test: any) => ({
+    const updatedTests = testDetails.map((test: any) => ({
       _id: test._id,
       testName: test.testName,
       difficultyLevel: test.difficultyLevel,
@@ -103,6 +108,7 @@ const getTest = asyncHandler(async (req: Request, res: Response) => {
       updatedAt: test.updatedAt,
       marksObtained: test.marksObtained ?? 0,
       totalMarks: test.totalMarks ?? 0,
+      isCompleted: test.isCompleted,
       subjectName: test.subjectId?.subjectName,
       className: test.classId?.className,
       avgScore: test.totalMarks
@@ -110,7 +116,12 @@ const getTest = asyncHandler(async (req: Request, res: Response) => {
         : 0,
     }));
 
+    const filteredTests = updatedTests.filter((test) => test.isCompleted);
+    const formattedTests = filteredTests.map(({ isCompleted, ...rest }) => {
+      return { ...rest };
+    });
     const totalTests = await Test.countDocuments({
+      isCompleted: true,
       $or: [
         { testName: { $regex: search || "", $options: "i" } },
         { difficultyLevel: { $regex: search || "", $options: "i" } },
@@ -134,10 +145,19 @@ const getTest = asyncHandler(async (req: Request, res: Response) => {
 
 const deleteTest = asyncHandler(async (req: Request, res: Response) => {
   const { testId } = req.params;
+
   const test = await Test.findByIdAndDelete(testId);
   if (!test) {
-    throw new Error("Test not found");
+    return res.status(404).json({ success: false, message: "Test not found" });
   }
+  if (test.userId) {
+    await User.findOneAndUpdate(
+      { _id: test.userId },
+      { $inc: { testTaken: -1 } },
+      { new: true }
+    );
+  }
+
   res.status(200).json({
     success: true,
     message: "Test deleted successfully",
@@ -202,10 +222,11 @@ const submitTest = asyncHandler(async (req: Request, res: Response) => {
     }
   );
 
-  await Test.updateOne(
+  await Test.updateMany(
     { _id: testId },
     {
       $inc: { marksObtained: totalScore },
+      $set: { isCompleted: true },
     }
   );
 

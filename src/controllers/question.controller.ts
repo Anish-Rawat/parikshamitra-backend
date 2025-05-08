@@ -54,16 +54,17 @@ const addQuestion = asyncHandler(
           .json({ success: false, message: "This question already exist." });
         return;
       }
-
+      let _id = subjectId;
       const isClassIdExist = await Class.findById(classId);
-      const isSubjectIdExist = await Subject.findById(classId);
+      const isSubjectIdExist = await Subject.findById(_id);
 
-      if (!(isClassIdExist || isSubjectIdExist)) {
+      if (!isClassIdExist || !isSubjectIdExist) {
         res.status(400).json({
           success: false,
           message: "No such class id or subject id match.",
         });
       }
+      console.log("----",classId,subjectId,difficultyLevel,question,correctAnswer,options)
       const response = await Question.create({
         classId: classId.toLowerCase().trim(),
         subjectId: subjectId.toLowerCase().trim(),
@@ -73,6 +74,18 @@ const addQuestion = asyncHandler(
         correctAnswer: correctAnswer,
         totalQuestionsByClassAndSubject: totalQuestionsByClassAndSubject,
       });
+      console.log("isClassIdExist",isClassIdExist)
+      console.log("isSubjectIdExist",isSubjectIdExist)
+
+      let formattedAddQuestionResponse;
+      if(response){
+        formattedAddQuestionResponse = {
+          ...response.toObject(),
+          className:isClassIdExist?.className,
+          subjectName:isSubjectIdExist?.subjectName,
+        }
+      }
+      console.log("formattedAddQuestionResponse",formattedAddQuestionResponse)
       // After saving subject
       const updatedSelectedSubjectInfo = await Subject.findByIdAndUpdate(
         subjectId,
@@ -83,7 +96,7 @@ const addQuestion = asyncHandler(
       );
       res
         .status(200)
-        .json(new ApiResponse(200, "question added successfully", response));
+        .json(new ApiResponse(200, "question added successfully", formattedAddQuestionResponse));
     } catch (error: unknown) {
       if (
         error &&
@@ -270,8 +283,7 @@ const searchQuestion = asyncHandler(async (req: Request, res: Response) => {
 
 const filterQuestion = asyncHandler(async (req: Request, res: Response) => {
   try {
-    const { subjectId, classId, difficultyLevel } = req.body;
-    const { page = 1, limit = 10 } = req.query;
+    const { subjectId, classId, difficultyLevel , searchQuestion, page = 1, limit = 10 } = req.query;
     if (!(subjectId || classId || difficultyLevel)) {
       res.status(400).json({
         success: false,
@@ -281,9 +293,9 @@ const filterQuestion = asyncHandler(async (req: Request, res: Response) => {
     }
     const howManyQuestionToSkip = (Number(page) - 1) * Number(limit);
     const filteredQuestion = await Question.find({
-      classId: classId.toLowerCase().trim(),
-      subjectId: subjectId.toLowerCase().trim(),
-      difficultyLevel: difficultyLevel.toLowerCase().trim(),
+      classId: (classId as string).toLowerCase().trim(),
+      subjectId: (subjectId as string).toLowerCase().trim(),
+      difficultyLevel: (difficultyLevel as string).toLowerCase().trim(),
     })
       .skip(howManyQuestionToSkip)
       .limit(Number(limit));
@@ -323,50 +335,11 @@ const getQuestions = asyncHandler(
   async (req: Request, res: Response, _next: NextFunction): Promise<void> => {
     try {
       const {
-        classId,
-        subjectId,
-        difficultyLevel = "easy",
-        totalQuestions = 10,
+        limit=10,
+        page=1,
       } = req.query;
-      if (classId === undefined || subjectId === undefined) {
-        res
-          .status(400)
-          .json({ success: false, message: "Class and subject are required." });
-        return;
-      }
-
-      const isClassIdExist = await Class.findOne({ _id: classId })
-        .lean()
-        .exec();
-      if (!isClassIdExist) {
-        res
-          .status(400)
-          .json({ success: false, message: "No such class id exist." });
-        return;
-      }
-      const subject = await Subject.findOne({ _id: subjectId });
-      if (!subject) {
-        res
-          .status(400)
-          .json({ success: false, message: "No such subject id exist." });
-        return;
-      }
-      const questions = await Question.aggregate([
-        {
-          $match: {
-            classId: new mongoose.Types.ObjectId(classId as string),
-            subjectId: new mongoose.Types.ObjectId(subjectId as string),
-            difficultyLevel: difficultyLevel,
-          },
-        },
-        { $sample: { size: Number(totalQuestions) } },
-        {
-          $project: {
-            correctAnswer: 0,
-            __v: 0,
-          },
-        },
-      ]);
+      const howManyQuestionToSkip = (Number(page)-1)*Number(limit)
+      const questions = await Question.find().skip(howManyQuestionToSkip).limit(Number(limit)).lean().exec();
       res
         .status(200)
         .json(new ApiResponse(200, "Questions fetched", questions));
