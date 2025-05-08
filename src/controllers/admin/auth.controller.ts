@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import { asyncHandler } from "../../utils/asyncHandler";
-// import { User } from "../../models/admin.model";
 import {Admin} from "../../models/admin.model"
 import bcrypt from "bcrypt";
 import { validateEmail } from "../../utils/helper";
@@ -47,19 +46,19 @@ const registerUser = asyncHandler(async (req: Request, res: Response) => {
     throw new Error("Please enter valid email");
   }
 
-  const user = await User.findOne({ email }).lean().exec();
+  const user = await Admin.findOne({ email }).lean().exec();
   if (user) {
     throw new Error("User already exist");
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
 
-  const newUser = await User.create({
+  const newUser = await Admin.create({
     userName,
     email,
     password: hashedPassword,
   });
-  const userDetails = await User.findById(newUser._id).select("-password -refreshToken");
+  const userDetails = await Admin.findById(newUser._id).select("-password -refreshToken");
   res.status(201).json({
     success: true,
     message: "User registered successfully",

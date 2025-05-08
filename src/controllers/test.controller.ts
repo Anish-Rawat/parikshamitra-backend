@@ -20,7 +20,6 @@ const createTest = asyncHandler(async (req: Request, res: Response) => {
   } = req.body;
   const customReq = req as CustomRequest;
   const userId = customReq.user._id;
-
   const testDetails = await Test.create({
     userId,
     testName,
@@ -49,8 +48,14 @@ const getTest = asyncHandler(async (req: Request, res: Response) => {
         path: "userId",
         select: "userName",
       })
-      .populate("subjectId", "subjectName")
-      .populate("classId", "className")
+      .populate({
+        path: "subjectId",
+        select: "subjectName",
+      })
+      .populate({
+        path: "classId",
+        select: "className",
+      })
       .lean();
     if (!testDetails) {
       throw new Error("Test not found");
@@ -112,9 +117,9 @@ const getTest = asyncHandler(async (req: Request, res: Response) => {
     }));
 
     const filteredTests = updatedTests.filter((test) => test.isCompleted);
-    const formattedTests = filteredTests.map(({isCompleted, ...rest}) => {
+    const formattedTests = filteredTests.map(({ isCompleted, ...rest }) => {
       return { ...rest };
-    })
+    });
     const totalTests = await Test.countDocuments({
       isCompleted: true,
       $or: [
@@ -140,10 +145,19 @@ const getTest = asyncHandler(async (req: Request, res: Response) => {
 
 const deleteTest = asyncHandler(async (req: Request, res: Response) => {
   const { testId } = req.params;
+
   const test = await Test.findByIdAndDelete(testId);
   if (!test) {
-    throw new Error("Test not found");
+    return res.status(404).json({ success: false, message: "Test not found" });
   }
+  if (test.userId) {
+    await User.findOneAndUpdate(
+      { _id: test.userId },
+      { $inc: { testTaken: -1 } },
+      { new: true }
+    );
+  }
+
   res.status(200).json({
     success: true,
     message: "Test deleted successfully",

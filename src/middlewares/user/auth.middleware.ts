@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
-import { User } from "../models/user.model";
-import { asyncHandler } from "../utils/asyncHandler";
+import { User } from "../../models/user.model";
+import { asyncHandler } from "../../utils/asyncHandler";
 import jwt from "jsonwebtoken";
 
 interface CustomRequest extends Request {
