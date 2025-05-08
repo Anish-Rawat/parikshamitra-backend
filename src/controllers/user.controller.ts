@@ -108,7 +108,7 @@ const getDashboardTilesInfo = asyncHandler(async (req: Request, res: Response) =
   let totalTestTaken = 0;
   getAllUsers.forEach((user) => {
     if (user.testTaken > 0) {
-      totalTestTaken += 1;
+      totalTestTaken += user.testTaken;
     }
   });
 
@@ -120,7 +120,7 @@ const getDashboardTilesInfo = asyncHandler(async (req: Request, res: Response) =
   res.status(StatusCodes.OK).json({
     totalUsers,
     totalTestTaken,
-    averageScore: averageScore / totalTestTaken,
+    averageScore: (averageScore / totalTestTaken * 100).toFixed(2),
   });
 });
 

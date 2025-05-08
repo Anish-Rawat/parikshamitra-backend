@@ -193,7 +193,7 @@ const submitTest = asyncHandler(async (req: Request, res: Response) => {
   const currentAvg = user.averageScore || 0;
 
   const newAvgScore =
-    (currentAvg * (newTestTaken - 1) + totalScore) / newTestTaken;
+    (currentAvg * (newTestTaken - 1) + totalScore) / newTestTaken * 100;
   await User.updateOne(
     { _id: userId },
     {
