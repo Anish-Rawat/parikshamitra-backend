@@ -3,6 +3,7 @@ import { asyncHandler } from "../utils/asyncHandler";
 import { Test } from "../models/test.model";
 import { Question } from "../models/question.model";
 import { User } from "../models/user.model";
+import mongoose from "mongoose";
 
 interface CustomRequest extends Request {
   user: {
@@ -209,11 +210,13 @@ const submitTest = asyncHandler(async (req: Request, res: Response) => {
     throw new Error("User not found");
   }
 
-  const newTestTaken = (user.testTaken || 0) + 1;
   const currentAvg = user.averageScore || 0;
 
+  const currentTestPercentage = (totalScore / test.totalQuestions) * 100;
   const newAvgScore =
-    (currentAvg * (newTestTaken - 1) + totalScore) / newTestTaken * 100;
+    (currentAvg * user.testTaken + currentTestPercentage) /
+    (user.testTaken + 1);
+
   await User.updateOne(
     { _id: userId },
     {
@@ -238,4 +241,30 @@ const submitTest = asyncHandler(async (req: Request, res: Response) => {
   });
 });
 
-export { createTest, getTest, deleteTest, submitTest };
+const getTestInfoByUserId = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { userId } = req.params;
+    // Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid userId" });
+    }
+
+    // Convert to ObjectId and fetch
+    const tests = await Test.find({
+      userId: new mongoose.Types.ObjectId(userId),
+    })
+      .populate("subjectId", "subjectName")
+      .populate("classId", "className")
+      .lean();
+
+    res.status(200).json({
+      success: true,
+      message: "Test fetched successfully",
+      tests,
+    });
+  }
+);
+
+export { createTest, getTest, deleteTest, submitTest, getTestInfoByUserId };
