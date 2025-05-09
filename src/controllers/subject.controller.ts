@@ -218,13 +218,6 @@ const filterSubjects = asyncHandler(
   async ( req: Request,res: Response, next: NextFunction): Promise<void> => {
     try {
       const {classId,page=1,limit=10}=req.query;
-      if(!classId){
-        res.status(400).json({
-          success: false,
-          message:
-            "Please select class to filter the data.",
-        });
-      }
       const howManySubjectsToSkip = (Number(page)-1)*Number(limit);
       const filteredSubjectByClassId = await Subject.find({classId}).populate("classId","className").skip(howManySubjectsToSkip).limit(Number(limit)).lean().exec()
       const totalRecords = filteredSubjectByClassId.length;
