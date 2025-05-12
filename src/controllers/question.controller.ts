@@ -64,15 +64,6 @@ const addQuestion = asyncHandler(
           message: "No such class id or subject id match.",
         });
       }
-      console.log(
-        "----",
-        classId,
-        subjectId,
-        difficultyLevel,
-        question,
-        correctAnswer,
-        options
-      );
       const response = await Question.create({
         classId: classId.toLowerCase().trim(),
         subjectId: subjectId.toLowerCase().trim(),
@@ -140,8 +131,8 @@ const addQuestion = asyncHandler(
 
 const editQuestion = asyncHandler(async (req: Request, res: Response) => {
   try {
-    const selectedQuestionId = req.params.id;
     const {
+      questionId,
       classId,
       subjectId,
       difficultyLevel,
@@ -172,14 +163,36 @@ const editQuestion = asyncHandler(async (req: Request, res: Response) => {
         );
       return;
     }
-    const response = await Question.findByIdAndUpdate(
-      selectedQuestionId,
-      req.body,
-      { new: true }
-    );
+    console.log("classiD", classId);
+    console.log("questionId", questionId);
+    // let _id = subjectId;
+    const isClassIdExist = await Class.findById(classId);
+    const isQuestionIdExist = await Question.findById(questionId);
+    const isSubjectIdExist = await Subject.findById(subjectId);
+
+    if (!isQuestionIdExist || !isSubjectIdExist) {
+      res.status(400).json({
+        success: false,
+        message: "No such question id or subject id match.",
+      });
+    }
+    console.log(isQuestionIdExist, isSubjectIdExist);
+    const response = await Question.findByIdAndUpdate(questionId, req.body, {
+      new: true,
+    });
+    let formattedEditQuestionResponse;
+    if (response) {
+      formattedEditQuestionResponse = {
+        ...response.toObject(),
+        className: isClassIdExist?.className,
+        subjectName: isSubjectIdExist?.subjectName,
+      };
+    }
+    console.log("formattedEditQuestionResponse",formattedEditQuestionResponse
+    )
     res
       .status(200)
-      .json(new ApiResponse(200, "question updated successfully", response));
+      .json(new ApiResponse(200, "question updated successfully", formattedEditQuestionResponse));
   } catch (error) {
     if (
       error &&
@@ -209,7 +222,9 @@ const editQuestion = asyncHandler(async (req: Request, res: Response) => {
 const deleteQuestion = asyncHandler(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { classId, subjectId, questionId } = req.query;
+      const { classId, subjectId, questionId } = req.body;
+      console.log("Subject id my get ", subjectId);
+      console.log("question id my get ", questionId);
       const isSelectedQuestionIdExist = await Question.findById(questionId);
       if (!isSelectedQuestionIdExist) {
         res
@@ -249,59 +264,13 @@ const deleteQuestion = asyncHandler(
   }
 );
 
-const searchQuestion = asyncHandler(async (req: Request, res: Response) => {
-  try {
-    const { searchString, page = 1, limit = 10 } = req.query;
-    if (!searchString) {
-      res
-        .status(400)
-        .json({ success: false, message: "Search string is required." });
-    }
-    const howManyQuestionToSkip = (Number(page) - 1) * Number(limit);
-    const searchedResult = await Question.find({
-      question: { $regex: searchString, $options: "i" },
-    })
-      .skip(howManyQuestionToSkip)
-      .limit(Number(limit));
-
-    res
-      .status(200)
-      .json(
-        new ApiResponse(200, "question searched successfully", searchedResult)
-      );
-  } catch (error) {
-    if (
-      error &&
-      typeof error === "object" &&
-      "name" in error &&
-      error.name === "ValidationError"
-    ) {
-      const validationError = error as any;
-
-      const messages = Object.values(validationError.errors).map(
-        (val: any) => val.message
-      );
-
-      res.status(400).json({
-        success: false,
-        message: messages.join(". "), // or messages[0] if you want just the first
-      });
-    } else {
-      res.status(500).json({
-        success: false,
-        message: "Internal Server Error",
-      });
-    }
-  }
-});
-
 const getQuestions = asyncHandler(async (req: Request, res: Response) => {
   try {
     const {
-      subjectId="",
-      classId="",
-      difficultyLevel="",
-      searchQuestion="",
+      subjectId = "",
+      classId = "",
+      difficultyLevel = "",
+      searchQuestion = "",
       page = 1,
       limit = 10,
     } = req.query;
@@ -309,8 +278,12 @@ const getQuestions = asyncHandler(async (req: Request, res: Response) => {
     const filters: Record<string, any> = {};
 
     if (classId) filters.classId = (classId as string).toLowerCase().trim();
-    if (subjectId) filters.subjectId = (subjectId as string).toLowerCase().trim();
-    if (difficultyLevel) filters.difficultyLevel = (difficultyLevel as string).toLowerCase().trim();
+    if (subjectId)
+      filters.subjectId = (subjectId as string).toLowerCase().trim();
+    if (difficultyLevel)
+      filters.difficultyLevel = (difficultyLevel as string)
+        .toLowerCase()
+        .trim();
     if (searchQuestion) {
       filters.question = {
         $regex: searchQuestion as string,
@@ -318,27 +291,32 @@ const getQuestions = asyncHandler(async (req: Request, res: Response) => {
       };
     }
 
-      const howManyQuestionToSkip = (Number(page) - 1) * Number(limit);
-      const filteredQuestion = await Question.find(filters)
-        .populate("classId", "className")
-        .populate("subjectId", "subjectName")
-        .skip(howManyQuestionToSkip)
-        .limit(Number(limit))
-        .lean().exec()
-      const formattedFilteredQuestionResponse = filteredQuestion?.map((que)=>{
-        const {subjectId,classId,...rest} = que;
-        return {
-          ...rest,
-          subjectInfo:subjectId,
-          classInfo: classId,
-        }
-      })
-      res
-        .status(200)
-        .json(
-          new ApiResponse(200, "Data filtered successfully", formattedFilteredQuestionResponse)
-        );
-    
+    const howManyQuestionToSkip = (Number(page) - 1) * Number(limit);
+    const totalQuestions = (await Question.find(filters).lean().exec()).length
+    const filteredQuestion = await Question.find(filters)
+      .populate("classId", "className")
+      .populate("subjectId", "subjectName")
+      .skip(howManyQuestionToSkip)
+      .limit(Number(limit))
+      .lean()
+      .exec();
+    const formattedFilteredQuestionResponse = filteredQuestion?.map((que) => {
+      const { subjectId, classId, ...rest } = que;
+      return {
+        ...rest,
+        subjectInfo: subjectId,
+        classInfo: classId,
+      };
+    });
+    res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          "Data filtered successfully",
+          {result : formattedFilteredQuestionResponse,totalRecords:totalQuestions},
+        )
+      );
   } catch (error) {
     if (
       error &&
@@ -365,10 +343,4 @@ const getQuestions = asyncHandler(async (req: Request, res: Response) => {
   }
 });
 
-export {
-  addQuestion,
-  editQuestion,
-  deleteQuestion,
-  searchQuestion,
-  getQuestions,
-};
+export { addQuestion, editQuestion, deleteQuestion, getQuestions };

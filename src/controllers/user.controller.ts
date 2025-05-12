@@ -44,6 +44,7 @@ const getTilesInfoBasedOnRange = async (period: number = 7) => {
 
 const getAllUsers = asyncHandler(async (req: Request, res: Response) => {
   const { userId } = req.params;
+  console.log("------------",userId);
   //fetch user from db by id
   if (userId) {
     const user = await User.findById(userId).select("-password -refreshToken");

@@ -4,6 +4,7 @@ class ApiResponse<T> {
     statusCode: number;
     message: string;
     data?: DataInterface<T> | T;
+    record?:number;
     success: boolean;
 
     constructor(statusCode: number, message: string = "success", payload?: DataInterface<T> | T ) {
