@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { addSubject, deleteSubject, editSubject, filterSubjects, getSubjects } from "../controllers/subject.controller";
+import { addSubject, deleteSubject, editSubject, getSubjects } from "../controllers/subject.controller";
 import { verifyJWT } from "../middlewares/user/auth.middleware";
 
 const router = Router()
@@ -8,7 +8,6 @@ router.route('/get-subjects').get(verifyJWT,getSubjects)
 router.route('/add-subject').post(verifyJWT,addSubject)
 router.route('/edit-subject').put(verifyJWT,editSubject)
 router.route('/delete-subject').delete(verifyJWT,deleteSubject)
-router.route('/filter-subject').get(verifyJWT,filterSubjects)
 
 
 export default router

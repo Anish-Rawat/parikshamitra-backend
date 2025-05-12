@@ -4,48 +4,48 @@ import ApiResponse from "../utils/apiResponse";
 import { asyncHandler } from "../utils/asyncHandler";
 import { NextFunction, Request, Response } from "express";
 
-const getSubjects = asyncHandler(
-  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-      const { classId } = req.query;
-      let subjectResponse;
-      if (classId) {
-        subjectResponse = await Subject.find({
-          classId: classId,
-        })
-          .populate("classId", "className")
-          .lean()
-          .exec();
-      } else {
-        subjectResponse = await Subject.find()
-          .populate("classId", "className")
-          .lean()
-          .exec();
-      }
-      const totalRecords = subjectResponse.length;
-      console.log(subjectResponse);
-      const formattedSubjectResponse = subjectResponse.map((sub) => ({
-        _id: sub._id,
-        subjectName: sub.subjectName,
-        classId: sub.classId?._id || null,
-        className: sub.classId?.className || "",
-        totalQuestionsByClassAndSubject: sub.totalQuestionsByClassAndSubject,
-        createdAt: sub.createdAt,
-        updatedAt: sub.updatedAt,
-      }));
-      res.status(201).json(
-        new ApiResponse(200, "subject fetched successfully", {
-          totalRecords,
-          result: formattedSubjectResponse,
-        })
-      );
-    } catch (error) {
-      res
-        .status(500)
-        .json({ success: false, message: "Internal Server Error" });
-    }
-  }
-);
+// const getSubjects = asyncHandler(
+//   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+//     try {
+//       const { classId } = req.query;
+//       let subjectResponse;
+//       if (classId) {
+//         subjectResponse = await Subject.find({
+//           classId: classId,
+//         })
+//           .populate("classId", "className")
+//           .lean()
+//           .exec();
+//       } else {
+//         subjectResponse = await Subject.find()
+//           .populate("classId", "className")
+//           .lean()
+//           .exec();
+//       }
+//       const totalRecords = subjectResponse.length;
+//       console.log(subjectResponse);
+//       const formattedSubjectResponse = subjectResponse.map((sub) => ({
+//         _id: sub._id,
+//         subjectName: sub.subjectName,
+//         classId: sub.classId?._id || null,
+//         className: sub.classId?.className || "",
+//         totalQuestionsByClassAndSubject: sub.totalQuestionsByClassAndSubject,
+//         createdAt: sub.createdAt,
+//         updatedAt: sub.updatedAt,
+//       }));
+//       res.status(201).json(
+//         new ApiResponse(200, "subject fetched successfully", {
+//           totalRecords,
+//           result: formattedSubjectResponse,
+//         })
+//       );
+//     } catch (error) {
+//       res
+//         .status(500)
+//         .json({ success: false, message: "Internal Server Error" });
+//     }
+//   }
+// );
 
 const addSubject = asyncHandler(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -214,14 +214,16 @@ const deleteSubject = asyncHandler(
   }
 );
 
-const filterSubjects = asyncHandler(
+const getSubjects = asyncHandler(
   async ( req: Request,res: Response, next: NextFunction): Promise<void> => {
     try {
-      const {classId,page=1,limit=10}=req.query;
+      const {classId="",page=1,limit=10}=req.query;
+      const filters: Record<string, any> = {};
+      if (classId) filters.classId = (classId as string).toLowerCase().trim();
       const howManySubjectsToSkip = (Number(page)-1)*Number(limit);
-      const filteredSubjectByClassId = await Subject.find({classId}).populate("classId","className").skip(howManySubjectsToSkip).limit(Number(limit)).lean().exec()
-      const totalRecords = filteredSubjectByClassId.length;
-      const formattedFilteredSubjectsByClassId = filteredSubjectByClassId.map((sub) => ({
+      const filteredSubjectByClassId = await Subject.find(filters).populate("classId","className").skip(howManySubjectsToSkip).limit(Number(limit)).lean().exec()
+      const totalRecords = (await Subject.find(filters).populate("classId","className").lean().exec()).length
+      const formattedFilteredSubjectsByClassId = await filteredSubjectByClassId.map((sub) => ({
         _id: sub._id,
         subjectName: sub.subjectName,
         classId: sub.classId?._id || null,
@@ -261,4 +263,4 @@ const filterSubjects = asyncHandler(
     }
   }
 );
-export { addSubject, editSubject, deleteSubject, getSubjects, filterSubjects};
+export { addSubject, editSubject, deleteSubject, getSubjects};
