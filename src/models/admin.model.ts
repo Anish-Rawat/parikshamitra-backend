@@ -1,6 +1,9 @@
 import mongoose, { Schema } from "mongoose";
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
+import jwt, { Secret, SignOptions } from "jsonwebtoken";
+
+type JWTExpiry = string | number;
+
 
 const adminSchema = new Schema(
   {
@@ -42,27 +45,34 @@ adminSchema.pre("save", async function (next) {
 });
 
 adminSchema.methods.generateAccessToken = function () {
+  const options: SignOptions = {
+    expiresIn: "2h",
+  };
   return jwt.sign(
     {
       _id: this._id,
       email: this.email,
       userName: this.userName,
     },
-    process.env.ACCESS_TOKEN_SECRET as jwt.Secret
-    // { expiresIn: parseInt(process.env.ACCESS_TOKEN_EXPIRY as string, 10) }
+    process.env.ACCESS_TOKEN_SECRET as jwt.Secret,
+    options
   );
 };
 
 adminSchema.methods.generateRefreshToken = function () {
+  const options: SignOptions = {
+    expiresIn: "1d",
+  }
   return jwt.sign(
     {
       _id: this._id,
       email: this.email,
       userName: this.userName,
     },
-    process.env.REFRESH_TOKEN_SECRET as jwt.Secret
-    // { expiresIn: parseInt(process.env.REFRESH_TOKEN_EXPIRY as string, 10) }
+    process.env.REFRESH_TOKEN_SECRET as Secret,
+    options
   );
 };
+
 
 export const Admin = mongoose.model("AdminAccount", adminSchema);

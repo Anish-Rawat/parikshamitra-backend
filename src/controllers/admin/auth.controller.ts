@@ -1,9 +1,11 @@
 import { Request, Response } from "express";
 import { asyncHandler } from "../../utils/asyncHandler";
-import {Admin} from "../../models/admin.model"
+import { Admin } from "../../models/admin.model";
 import bcrypt from "bcrypt";
 import { validateEmail } from "../../utils/helper";
 import { StatusCodes } from "http-status-codes";
+import ApiError from "../../utils/apiError";
+import jwt from "jsonwebtoken";
 
 const checkPasswordMatch = async (plainText: string, hashed: string) => {
   try {
@@ -58,7 +60,9 @@ const registerUser = asyncHandler(async (req: Request, res: Response) => {
     email,
     password: hashedPassword,
   });
-  const userDetails = await Admin.findById(newUser._id).select("-password -refreshToken");
+  const userDetails = await Admin.findById(newUser._id).select(
+    "-password -refreshToken"
+  );
   res.status(201).json({
     success: true,
     message: "User registered successfully",
@@ -99,23 +103,23 @@ const loginUser = asyncHandler(async (req: Request, res: Response) => {
   const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
     user._id
   );
-  const loggedInUser = await Admin.findById(user._id).select(
-    "-password"
-  ).lean();
+  const loggedInUser = await Admin.findById(user._id)
+    .select("-password")
+    .lean();
   loggedInUser.accessToken = accessToken;
   const options = {
     httpOnly: true,
     secure: true,
   };
   res
-  .status(200)
-  .cookie("refreshToken", refreshToken, options)
-  .cookie("accessToken", accessToken, options)
-  .json({
-    success: true,
-    message: "User logged in successfully",
-    data: loggedInUser,
-  });
+    .status(200)
+    .cookie("refreshToken", refreshToken, options)
+    .cookie("accessToken", accessToken, options)
+    .json({
+      success: true,
+      message: "User logged in successfully",
+      data: loggedInUser,
+    });
 });
 
 const logoutUser = asyncHandler(async (req: any, res: any) => {
@@ -150,6 +154,57 @@ const getUserInfoByEmail = asyncHandler(async (req: Request, res: Response) => {
     },
   };
   res.status(StatusCodes.OK).json({ response });
-})
+});
 
-export { registerUser, loginUser, logoutUser, getUserInfoByEmail };
+const refreshAccessToken = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const incomingRefreshToken =
+      req.cookies.refreshToken || req.body.refreshToken;
+    if (!incomingRefreshToken) {
+      throw new ApiError(StatusCodes.UNAUTHORIZED, "Refresh token not found");
+    }
+    const decodedJwt = jwt.verify(
+      incomingRefreshToken,
+      process.env.REFRESH_TOKEN_SECRET as jwt.Secret
+    ) as jwt.JwtPayload;
+
+    if (!decodedJwt) {
+      throw new ApiError(StatusCodes.UNAUTHORIZED, "Invalid refresh token");
+    }
+
+    const user = await Admin.findById(decodedJwt._id).select(
+      "-password -refreshToken"
+    );
+    if (!user) {
+      throw new ApiError(StatusCodes.UNAUTHORIZED, "User not found");
+    }
+
+    if (incomingRefreshToken !== user.refreshToken) {
+      throw new ApiError(StatusCodes.UNAUTHORIZED, "Invalid refresh token");
+    }
+
+    const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
+      user._id
+    );
+    const options = {
+      httpOnly: true,
+      secure: true,
+    };
+    res
+      .status(StatusCodes.OK)
+      .cookie("refreshToken", refreshToken, options)
+      .cookie("accessToken", accessToken, options)
+      .json({
+        success: true,
+        message: "Access token refreshed successfully",
+        data: {
+          accessToken,
+          refreshToken,
+        },
+      });
+  } catch (error) {
+    console.log(error);
+  }
+});
+
+export { registerUser, loginUser, logoutUser, getUserInfoByEmail, refreshAccessToken };
