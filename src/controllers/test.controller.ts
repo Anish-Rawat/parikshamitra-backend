@@ -177,6 +177,11 @@ const submitTest = asyncHandler(async (req: Request, res: Response) => {
   if (!test) {
     return res.status(404).json({ success: false, message: "Test not found" });
   }
+  if (test.isCompleted) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Test already submitted" });
+  }
 
   // 2. Create a map from submitted answers
   const submittedMap = new Map<string, string>();

@@ -13,20 +13,19 @@ interface CustomRequest extends Request {
 const getTilesInfoBasedOnRange = async (period: number = 7) => {
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - period);
+  
   const totalUsers = await User.countDocuments({
     createdAt: { $gte: startDate },
   });
   const getAllUsers = await User.find({ createdAt: { $gte: startDate } });
   let totalTestTaken = 0;
   getAllUsers.forEach((user) => {
-    console.log("user", user);
     if (user.testTaken > 0) {
       totalTestTaken += user.testTaken;
     }
   });
   let averageScore = 0;
   getAllUsers.forEach((user) => {
-    console.log(user, '------)')
       averageScore += user.averageScore;
   });
   let testTakenUser = 0;
