@@ -43,5 +43,8 @@ app.use('/api/v1/admin/test',testRouter)
 app.use('/api/v1/client/test', testRouter);
 app.use('/api/v1/client/dashboard',userRouter);
 app.use('/api/v1/client/auth',userAuthRouter);
+app.use('/api/v1/client/class',classRouter);
+app.use('/api/v1/client/subject',subjectRouter)
+
 
 export default app
