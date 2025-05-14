@@ -81,24 +81,23 @@ const loginUser = asyncHandler(async (req: Request, res: Response) => {
   // 7. send response
 
   const { email, password } = req.body;
-
   if ([email.trim(), password.trim()].includes("")) {
-    throw new Error("please enter all fields");
+    res.status(400).json({ success: false, message: "please enter all fields" });
   }
 
   const isValidEmail = validateEmail(email);
   if (!isValidEmail) {
-    throw new Error("Please enter valid email");
+    res.status(400).json({ success: false, message: "Please enter valid email" });
   }
 
   const user = await User.findOne({ email });
   if (!user) {
-    throw new Error("User not found");
+    res.status(400).json({ success: false, message: "User not found" });
   }
 
   const isPasswordMatch = await checkPasswordMatch(password, user.password);
   if (!isPasswordMatch) {
-    throw new Error("Password does not match");
+    res.status(400).json({ success: false, message: "Password does not match" });
   }
 
   const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
