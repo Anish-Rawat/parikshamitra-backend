@@ -123,23 +123,30 @@ const loginUser = asyncHandler(async (req: Request, res: Response) => {
 });
 
 const logoutUser = asyncHandler(async (req: any, res: any) => {
-  await User.findOneAndUpdate(
-    { _id: req.user._id },
-    { refreshToken: "" },
-    { new: true }
-  );
-  const options = {
-    httpOnly: true,
-    secure: true,
-  };
-  res
-    .clearCookie("refreshToken", options)
-    .clearCookie("accessToken", options)
-    .status(200)
-    .json({
-      success: true,
-      message: "User logged out successfully",
-    });
+  try {
+    await User.findOneAndUpdate(
+      { _id: req.user._id },
+      { refreshToken: "" },
+      { new: true }
+    );
+    const options = {
+      httpOnly: true,
+      secure: true,
+    };
+    res
+      .clearCookie("refreshToken", options)
+      .clearCookie("accessToken", options)
+      .status(200)
+      .json({
+        success: true,
+        message: "User logged out successfully",
+      });
+  } catch (error) {
+    console.error("Error logging out user", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Error logging out user" });
+  }
 });
 
 const getUserInfoByEmail = asyncHandler(async (req: Request, res: Response) => {
