@@ -32,6 +32,11 @@ export const verifyJWT = asyncHandler(async (req: Request, res: Response, next: 
     const user = await User.findById(decodedJwt._id).select(
       "-password -refreshToken"
     );
+    if (!user) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid token or user not found" });
+    }
     customReq.user = decodedJwt;
     next();
   } catch (err) {
