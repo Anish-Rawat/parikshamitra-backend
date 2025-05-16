@@ -29,18 +29,18 @@ export const verifyJWT = asyncHandler(
           .status(401)
           .json({ success: false, message: "Unauthorized request" });
       }
-      const user = await Admin.findById(decodedJwt._id).select(
+      const admin = await Admin.findById(decodedJwt._id).select(
         "-password -refreshToken"
       );
-      if (!user) {
-        return res
-          .status(403)
-          .json({
-            success: false,
-            message: "Access forbidden: Admin privileges required",
-          });
-      }
-      console.log("user admin", user);
+      // if (!admin) {
+      //   return res
+      //     .status(403)
+      //     .json({
+      //       success: false,
+      //       message: "Access forbidden: Admin privileges required",
+      //     });
+      // }
+      console.log("user admin", admin);
       customReq.user = decodedJwt;
       next();
     } catch (err) {

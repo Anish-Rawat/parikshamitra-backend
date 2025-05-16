@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { verifyJWT } from "../middlewares/user/auth.middleware";
-import { blockUserById, getAllUsers, getDashboardTilesInfo, getUserTilesInfo } from "../controllers/user.controller";
+import { verifyJWT } from "../../middlewares/user/auth.middleware";
+import { blockUserById, getAllUsers, getDashboardTilesInfo, getUserTilesInfo } from "../../controllers/user.controller";
 
 const router = Router();
 
