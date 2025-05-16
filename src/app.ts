@@ -28,8 +28,9 @@ import userRouter from "./routes/user.router"
 import questionRouter from "./routes/question.router"
 import classRouter from "./routes/class.router"
 import adminAuthRouter from "./routes/admin/auth.router"
-import testRouter from "./routes/admin/test.router"
+import adminTestRouter from "./routes/admin/test.router"
 import userAuthRouter from "./routes/user/auth.router"
+import userTestRouter from "./routes/user/test.router"
 
 // admin API`s
 app.use('/api/v1/admin/user', userRouter)
@@ -37,15 +38,15 @@ app.use('/api/v1/admin/auth', adminAuthRouter)
 app.use('/api/v1/admin/class',classRouter)
 app.use('/api/v1/admin/subject',subjectRouter)
 app.use('/api/v1/admin/question',questionRouter)
-app.use('/api/v1/admin/test',testRouter)
+app.use('/api/v1/admin/test',adminTestRouter)
 
 // client API`s
-app.use('/api/v1/client/test', testRouter);
 app.use('/api/v1/client/dashboard',userRouter);
 app.use('/api/v1/client/auth',userAuthRouter);
 app.use('/api/v1/client/class',classRouter);
 app.use('/api/v1/client/subject',subjectRouter)
 app.use('/api/v1/client/question',questionRouter)
+app.use('/api/v1/client/test', userTestRouter);
 
 
 export default app
